@@ -1,15 +1,15 @@
- Format: HA.ADDON_VERSION-kanidm.UPSTREAM_VERSION
+ Format: HA.ADDON_VERSION-${slug}.UPSTREAM_VERSION
 
-  HA.1.0.0-kanidm.1.4.3   
-  HA.1.1.0-kanidm.1.4.3   # Added replication (addon update)
-  HA.1.1.1-kanidm.1.4.4   # Kanidm patch update
-  HA.1.2.0-kanidm.1.5.0   # Both updated
-  HA.2.0.0-kanidm.1.5.0   # Breaking addon change
+  HA.1.0.0-${slug}.1.4.3   
+  HA.1.1.0-${slug}.1.4.3   # Added replication (addon update)
+  HA.1.1.1-${slug}.1.4.4   # ADDDON patch update
+  HA.1.2.0-${slug}.1.5.0   # Both updated
+  HA.2.0.0-${slug}.1.5.0   # Breaking addon change
 
   Why this is better:
   1. Version comparison works: HA compares from left → right, so addon updates always detected
   2. Clear primary version: Addon version is primary (what users install)
-  3. Kanidm version visible: Still shows exact Kanidm version
+  3. ADDDON version visible: Still shows exact ADDDON version
   4. Sorting works correctly: HA.1.0.0 < HA.1.1.0 < HA.2.0.0
 
   Versioning Rules with This Format
@@ -25,42 +25,42 @@
   MINOR (HA.0.Y.0) - New features:
   - New features 
   - New configuration options 
-  - Kanidm minor version updates (1.4.x → 1.5.x)
+  - ADDDON minor version updates (1.4.x → 1.5.x)
   - Rule: Backward compatible, no user action needed
 
   PATCH (HA.0.0.Z) - Bug fixes:
   - Bug fixes in addon code
   - Documentation updates
-  - Kanidm patch updates (1.4.3 → 1.4.4)
-  - Dependency updates (non-Kanidm)
+  - ADDDON patch updates (1.4.3 → 1.4.4)
+  - Dependency updates (non-ADDDON)
   - Rule: Drop-in replacement
 
   Specific Scenarios
 
-  Scenario 1: Only Kanidm patch update (1.4.3 → 1.4.4)
-  HA.1.1.0-kanidm.1.4.3  →  HA.1.1.1-kanidm.1.4.4
+  Scenario 1: Only ADDDON patch update (1.4.3 → 1.4.4)
+  HA.1.1.0-${slug}.1.4.3  →  HA.1.1.1-${slug}.1.4.4
   - Bump addon PATCH version
-  - Update Kanidm version suffix
-  - Rationale: Any Kanidm update needs a new addon release
+  - Update ADDDON version suffix
+  - Rationale: Any ADDDON update needs a new addon release
 
-  Scenario 2: Only Kanidm minor update (1.4.4 → 1.5.0)
-  HA.1.1.1-kanidm.1.4.4  →  HA.1.2.0-kanidm.1.5.0
-  - Bump addon MINOR version (new Kanidm features)
-  - Update Kanidm version suffix
-  - Rationale: Kanidm minor = new features for users
+  Scenario 2: Only ADDDON minor update (1.4.4 → 1.5.0)
+  HA.1.1.1-${slug}.1.4.4  →  HA.1.2.0-${slug}.1.5.0
+  - Bump addon MINOR version (new ADDDON features)
+  - Update ADDDON version suffix
+  - Rationale: ADDDON minor = new features for users
 
-  Scenario 3: Only Kanidm major update (1.5.0 → 2.0.0)
-  HA.1.2.0-kanidm.1.5.0  →  HA.2.0.0-kanidm.2.0.0
+  Scenario 3: Only ADDDON major update (1.5.0 → 2.0.0)
+  HA.1.2.0-${slug}.1.5.0  →  HA.2.0.0-${slug}.2.0.0
   - Bump addon MAJOR version (likely breaks things)
-  - Update Kanidm version suffix
+  - Update ADDDON version suffix
   - Rationale: Upstream major version usually has breaking changes
 
-  Scenario 4: Addon feature + Kanidm update
-  HA.1.2.0-kanidm.1.5.0  →  HA.1.3.0-kanidm.1.5.1
+  Scenario 4: Addon feature + ADDDON update
+  HA.1.2.0-${slug}.1.5.0  →  HA.1.3.0-${slug}.1.5.1
   - Bump addon MINOR (if new feature) or PATCH (if bug fix)
-  - Update Kanidm version suffix
+  - Update ADDDON version suffix
 
-  Scenario 5: Only addon changes (no Kanidm update)
-  HA.1.2.0-kanidm.1.5.0  →  HA.1.2.1-kanidm.1.5.0
+  Scenario 5: Only addon changes (no ADDDON update)
+  HA.1.2.0-${slug}.1.5.0  →  HA.1.2.1-${slug}.1.5.0
   - Bump addon version as appropriate
-  - Keep Kanidm version same
+  - Keep ADDDON version same
