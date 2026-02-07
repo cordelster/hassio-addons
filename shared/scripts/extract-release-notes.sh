@@ -18,4 +18,4 @@ echo "❌ No changelog entry found for version ${VERSION}"
 exit 1
 fi
 
-echo "✔ Extracted release notes for ${VERSION}"`
+echo "✔ Extracted release notes for ${VERSION}"
