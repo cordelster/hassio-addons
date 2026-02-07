@@ -1,4 +1,4 @@
-## If any of these add-ons saves you time or makes your setup easier, I would be extremely grateful for your support!
+#### If any of these add-ons saves you time or makes your setup easier, I would be extremely grateful for your support!
 [![Donate via PayPal][paypal-badge]](https://www.paypal.com/donate/?hosted_button_id=5RBTFAV64XGJ2)
 ![update-badge](https://img.shields.io/github/last-commit/cordelster/hassio-addons?label=last%20update)
 
