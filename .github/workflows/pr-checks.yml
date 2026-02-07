@@ -1,0 +1,27 @@
+name: PR Checks
+
+on:
+  pull_request:
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      addons: ${{ steps.detect.outputs.addons }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        run: |
+          ADDONS=$(./shared/scripts/detect-changed-addons.sh origin/main | jq -R . | jq -s .)
+          echo "addons=$ADDONS" >> $GITHUB_OUTPUT
+
+  validate:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        addon: ${{ fromJson(needs.detect.outputs.addons) }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./shared/scripts/validate-addon.sh addons/${{ matrix.addon }}
+

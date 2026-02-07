@@ -1,0 +1,59 @@
+name: Release Add-ons
+
+on:
+  workflow_dispatch:
+
+jobs:
+  detect:
+    name: Detect changed add-ons
+    runs-on: ubuntu-latest
+    outputs:
+      addons: ${{ steps.detect.outputs.addons }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect add-ons
+        id: detect
+        run: |
+          ADDONS=$(./shared/scripts/detect-changed-addons.sh origin/main | jq -R . | jq -s .)
+          echo "addons=$ADDONS" >> $GITHUB_OUTPUT
+
+  release:
+    name: Build & publish add-ons
+    needs: detect
+    if: needs.detect.outputs.addons != '[]'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        addon: ${{ fromJson(needs.detect.outputs.addons) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Enable ARM emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Enable multi-arch Docker builder
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ️⃣ Authenticate to GHCR
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # Enforce version format
+      - name: Check version format
+        run: ./shared/scripts/check-version.sh addons/${{ matrix.addon }}
+
+      # ️⃣Build & push multi-arch image
+      - name: Build and push image
+        run: ./shared/scripts/build-and-push.sh addons/${{ matrix.addon }}
+
