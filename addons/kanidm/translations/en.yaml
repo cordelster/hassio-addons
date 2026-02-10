@@ -1,0 +1,308 @@
+---
+configuration:
+  domain:
+    name: Domain
+    description: >-
+      DNS domain name for Kanidm user identities (user@domain format). CRITICAL:
+      Never change this after initial setup - it will break WebAuthn, OAuth tokens,
+      and all credentials! This is NOT the access URL. Examples: idm.local,
+      kanidm.internal, yourdomain.com
+  hostname:
+    name: Hostname
+    description: >-
+      Hostname part of the FQDN (combined with domain to form hostname.domain).
+      This builds the Origin URL as https://hostname.domain:4869. Examples:
+      "kanidm" (forms kanidm.example.com), "idm" (forms idm.yourdomain.com).
+      Note: Runs on port 4869 internally. Change external port in Network settings if needed.
+  person_username:
+    name: Initial User Username
+    description: >-
+      Username for your initial admin account (alphanumeric, lowercase recommended).
+      This account will have full admin privileges. You'll receive a password reset
+      token in the logs on first run. Examples: john, jsmith, admin_user
+  person_displayname:
+    name: Initial User Display Name
+    description: >-
+      Full name for your initial admin account (shown in the UI). Examples:
+      "John Smith", "Admin User"
+  certificate_type:
+    name: Certificate Type
+    description: >-
+      Choose certificate source. Options: selfsigned (auto-generate self-signed
+      certificate for testing only), letsencrypt (automatically use Let's Encrypt
+      addon certificates from /ssl/), custom (provide your own certificate file
+      paths from /ssl/ directory).
+  cert_chain_path:
+    name: Certificate Chain Path
+    description: >-
+      Path to TLS certificate chain file (PEM format). ONLY used if certificate_type
+      is 'custom'. Path is relative to /ssl/ directory (do not include /ssl/ prefix).
+      Example: my-domain/fullchain.pem or custom-certs/cert.pem. Leave empty for
+      selfsigned or letsencrypt.
+  certificates:
+    name: TLS Certificates
+    description: Configure TLS certificates for HTTPS connections
+    fields:
+      type:
+        name: Certificate Type
+        description: >-
+          Choose certificate source: selfsigned (auto-generate for testing only),
+          letsencrypt (use Let's Encrypt addon certs from /ssl/), or custom (provide
+          your own certificate files from /ssl/ directory).
+      chain_path:
+        name: Certificate Chain Path
+        description: >-
+          Path to TLS certificate chain file (PEM format). ONLY used if type is 'custom'.
+          Path is relative to /ssl/ directory. Example: my-domain/fullchain.pem. Leave
+          empty for selfsigned or letsencrypt.
+      key_path:
+        name: Private Key Path
+        description: >-
+          Path to TLS private key file (PEM format). ONLY used if type is 'custom'.
+          Path is relative to /ssl/ directory. Example: my-domain/privkey.pem. Leave
+          empty for selfsigned or letsencrypt.
+  enable_ldap:
+    name: Enable LDAP
+    description: >-
+      Enable read-only LDAP interface for legacy applications. Set to true only
+      if you have applications that require LDAP. Uses LDAPS (encrypted LDAP over
+      TLS) on standard port 3636. Change external port in Network settings if needed.
+  enable_backup:
+    name: Enable Automatic Backup
+    description: >-
+      Enable scheduled database backups using Kanidm's internal online backup
+      feature. Backups are stored in /data/kanidm/backups/ and included in Home
+      Assistant addon backups.
+  backup_schedule:
+    name: Backup Schedule
+    description: >-
+      Cron schedule for automatic backups. Default is '00 22 * * *' (daily at
+      22:00 UTC). Format: minute hour day month weekday. Example: '00 02 * * *'
+      runs at 02:00 UTC daily.
+  backup_versions:
+    name: Backup Retention
+    description: >-
+      Number of backup versions to keep. Default is 7 (one week of daily backups).
+      Older backups are automatically deleted.
+  directory_sync:
+    name: Directory Sync
+    description: Synchronize users and groups from LDAP or FreeIPA directories
+    fields:
+      enabled:
+        name: Enable Directory Sync
+        description: >-
+          Master switch to enable/disable all directory synchronization. When disabled,
+          no sync operations will run regardless of individual source settings.
+      sources:
+        name: Sync Sources
+        description: >-
+          Configure LDAP or FreeIPA directory sync sources (max 5). Click 'Add item' to
+          configure a new source. Each source can sync from LLDAP, OpenLDAP, Active Directory,
+          FreeIPA, or other LDAP directories.
+        fields:
+          enabled:
+            name: Enabled
+            description: >-
+              Enable this directory sync source.
+          name:
+            name: Source Name
+            description: >-
+              Unique name for this sync source (alphanumeric, no spaces). Used in config filenames
+              and logs. Examples: lldap-prod, openldap-backup, ad-users, freeipa-main
+          sync_type:
+            name: Sync Type
+            description: >-
+              Type of directory to sync from: 'ldap' for generic LDAP directories (LLDAP, OpenLDAP, etc.)
+              or 'ipa' for FreeIPA/Red Hat Identity Management. Each type has different configuration fields.
+          sync_token:
+            name: Sync Token
+            description: >-
+              Kanidm sync token generated using 'kanidm system sync generate-token' command.
+              This authenticates the sync process to Kanidm. See DOCS.md for token generation steps.
+          schedule:
+            name: Schedule
+            description: >-
+              Cron-like schedule (sec min hour day month day-of-week year). Default "0 */10 * * * * *"
+              runs every 10 minutes. Examples: "0 */5 * * * * *" (every 5 min), "0 0 * * * * *" (hourly).
+          ldap_uri:
+            name: LDAP URI (use when sync_type=ldap)
+            description: >-
+              LDAP/LDAPS connection URL. Must use ldaps:// for secure connections. Examples:
+              ldaps://lldap.local:6360, ldaps://192.168.1.50:636, ldaps://ad.company.com:636
+          ldap_ca:
+            name: LDAP CA Certificate (use when sync_type=ldap)
+            description: >-
+              Path to CA certificate file for LDAPS verification. Relative to /ssl/ directory
+              (e.g., lldap/ca.pem) or absolute path (e.g., /ssl/custom/ca.crt). Required for LDAPS.
+          ldap_sync_dn:
+            name: LDAP Bind DN (use when sync_type=ldap)
+            description: >-
+              Distinguished Name for LDAP authentication. Examples: cn=admin,ou=people,dc=example,dc=com
+              (LLDAP), cn=Administrator,cn=Users,dc=company,dc=local (Active Directory)
+          ldap_sync_pw:
+            name: LDAP Bind Password (use when sync_type=ldap)
+            description: >-
+              Password for the LDAP bind DN. Store securely as it grants read access to your
+              LDAP directory.
+          ldap_sync_base_dn:
+            name: LDAP Base DN (use when sync_type=ldap)
+            description: >-
+              LDAP search base DN where users and groups are located. Examples: dc=example,dc=com
+              (LLDAP/OpenLDAP), dc=company,dc=local (Active Directory)
+          ldap_filter:
+            name: LDAP Filter (use when sync_type=ldap)
+            description: >-
+              LDAP search filter to select which entries to sync. Default
+              "(|(objectClass=person)(objectClass=group))" syncs all persons and groups. Can be
+              customized to filter specific OUs or attributes.
+          person_objectclass:
+            name: Person Object Class (use when sync_type=ldap)
+            description: >-
+              LDAP object class for person entries. Common values: person (generic LDAP),
+              inetOrgPerson (OpenLDAP), user (Active Directory). Default: person
+          person_attr_id:
+            name: Person ID Attribute (use when sync_type=ldap)
+            description: >-
+              LDAP attribute used as unique person identifier. Common values: uid (LLDAP/OpenLDAP),
+              sAMAccountName (Active Directory), cn. Default: uid
+          person_attr_displayname:
+            name: Person Display Name Attribute (use when sync_type=ldap)
+            description: >-
+              LDAP attribute for person's display name. Common values: cn, displayName. Default: cn
+          person_attr_mail:
+            name: Person Email Attribute (use when sync_type=ldap)
+            description: >-
+              LDAP attribute for person's email address. Usually: mail. Default: mail
+          group_objectclass:
+            name: Group Object Class (use when sync_type=ldap)
+            description: >-
+              LDAP object class for group entries. Common values: group (generic LDAP),
+              groupOfNames (OpenLDAP), group (Active Directory). Default: group
+          group_attr_name:
+            name: Group Name Attribute (use when sync_type=ldap)
+            description: >-
+              LDAP attribute used for group name. Usually: cn. Default: cn
+          group_attr_member:
+            name: Group Member Attribute (use when sync_type=ldap)
+            description: >-
+              LDAP attribute listing group members. Common values: member (most LDAP),
+              memberUid (some OpenLDAP). Default: member
+          ipa_uri:
+            name: FreeIPA URI (use when sync_type=ipa)
+            description: >-
+              LDAPS connection URL for FreeIPA server. Must connect directly to a specific FreeIPA
+              server, not a load balancer. Example: ldaps://ipa.example.com:636
+          ipa_ca:
+            name: FreeIPA CA Certificate (use when sync_type=ipa)
+            description: >-
+              Path to FreeIPA CA certificate. Typically /etc/ipa/ca.crt on FreeIPA-enrolled systems.
+              Can be relative to /ssl/ or absolute path.
+          ipa_sync_dn:
+            name: FreeIPA Bind DN (use when sync_type=ipa)
+            description: >-
+              Account with content sync rights in FreeIPA. Default FreeIPA admin: cn=Directory Manager.
+              For production, create dedicated sync account.
+          ipa_sync_pw:
+            name: FreeIPA Bind Password (use when sync_type=ipa)
+            description: >-
+              Password for FreeIPA bind DN. Store securely.
+          ipa_sync_base_dn:
+            name: FreeIPA Base DN (use when sync_type=ipa)
+            description: >-
+              Base DN to examine in FreeIPA directory. Example: dc=ipa,dc=example,dc=com.
+              Found in FreeIPA's LDAP configuration.
+          skip_invalid_password_formats:
+            name: Skip Invalid Password Formats (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Treat malformed passwords as 'no password' instead of blocking sync.
+              Useful for migration from systems with incompatible password hashes.
+          sync_password_as_unix_password:
+            name: Sync Password as Unix Password (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Initially sync account passwords to unix credentials for migration.
+              Allows decoupling passwords later. Useful for gradual migration.
+          status_bind:
+            name: Health Monitoring Endpoint (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: TCP address:port for health monitoring endpoint. Returns Ok/Err for
+              Nagios-style checks. Example: 127.0.0.1:8090. Leave empty to disable.
+          exclude_entries:
+            name: Exclude Entries (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Comma-separated syncuuids to exclude from sync. Format: "uuid1", "uuid2".
+              Expert feature - see Kanidm docs.
+          map_uuid:
+            name: Map UUIDs (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Remap entry UUIDs. Format: "syncuuid:new_uuid", "syncuuid2:new_uuid2".
+              Expert feature - see Kanidm docs.
+          map_name:
+            name: Map Names (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Rename entries during sync. Format: "syncuuid:new_name", "syncuuid2:new_name2".
+              Expert feature - see Kanidm docs.
+          map_gidnumber:
+            name: Map GID Numbers (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Reassign group ID numbers. Format: "syncuuid:new_gid", "syncuuid2:new_gid2".
+              Expert feature - see Kanidm docs.
+          map_uidnumber:
+            name: Map UID Numbers (use when sync_type=ipa)
+            description: >-
+              FreeIPA advanced option: Reassign user ID numbers. Format: "syncuuid:new_uid", "syncuuid2:new_uid2".
+              Expert feature - see Kanidm docs.
+  replication:
+    name: Replication
+    description: Configure multi-server replication for high availability
+    fields:
+      enabled:
+        name: Enable Replication
+        description: >-
+          Master switch to enable/disable replication. Set to true to enable multi-server
+          replication. Runs on standard port 8444.
+      partners:
+        name: Replication Partners
+        description: >-
+          Configure replication partners (other Kanidm servers). Click 'Add item' to add a
+          partner server. Each partner requires their replication certificate and origin URL.
+        fields:
+          origin:
+            name: Partner Origin URL
+            description: >-
+              Replication origin URL of the partner server. Format: repl://hostname.domain:8444
+              Example: repl://kanidm2.example.com:8444
+          certificate:
+            name: Partner Certificate
+            description: >-
+              Partner's replication certificate. Retrieve from partner using 'kanidmd show-replication-certificate'
+              command. Paste the full certificate text here.
+          automatic_refresh:
+            name: Automatic Refresh
+            description: >-
+              Enable automatic refresh for this partner. Set to true if THIS node acts as a
+              secondary/read-only node relative to this partner. Set to false if THIS node acts
+              as primary/write node.
+  database:
+    name: Database Tuning
+    description: Advanced database performance tuning options
+    fields:
+      fs_type:
+        name: Filesystem Type
+        description: >-
+          Optimize database for filesystem type. Use 'zfs' if data is on ZFS, otherwise 'other'.
+          Default 'other' is suitable for most installations.
+      arc_size:
+        name: Cache Size
+        description: >-
+          In-memory cache entries (minimum 256). Leave as 0 for auto-calculation (recommended).
+          Higher values improve performance but use more RAM.
+  log_level:
+    name: Log Level
+    description: >-
+      Logging verbosity. Options: info (normal operation - recommended for production),
+      debug (detailed debugging information), trace (very verbose tracing - for
+      troubleshooting only). Note: Kanidm does not support 'warn' or 'error' levels.
+network:
+  4869/tcp: Web Interface (HTTPS)
+  3636/tcp: LDAP over TLS (LDAPS)
+  8444/tcp: Replication (mutual-pull)
