@@ -1,0 +1,177 @@
+name: Kanidm
+version: HA.1.0.1-kanidm.1.8.5
+slug: kanidm
+description: Modern identity management and authentication platform
+url: https://github.com/cordelster/ha-addon-kanidm
+#image: "ghcr.io/cordelster/kanidm"
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+startup: application
+boot: auto
+healthcheck:
+  test: ["CMD", "curl", "-f", "-k", "https://localhost:4869/status"]
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 60s
+ports:
+  4869/tcp: 4869
+  3636/tcp: 3636
+  8444/tcp: 8444
+ports_description:
+  4869/tcp: Web Interface (HTTPS) - Access via https://hostname.domain:4869
+  3636/tcp: LDAP over TLS (LDAPS)
+  8444/tcp: Replication (mutual-pull)
+# panel_icon: mdi:shield-account
+# panel_title: Kanidm
+# webui: "https://[HOST]:[PORT:4869]"
+map:
+  - addon_config:rw
+  - ssl:ro
+hassio_api: true
+hassio_role: default
+auth_api: false
+homeassistant_api: false
+apparmor: true
+
+options:
+  # ==========================================
+  # DOMAIN AND HOSTNAME CONFIGURATION (Required)
+  # ==========================================
+  # Domain: DNS domain name for Kanidm identities
+  #         CRITICAL: Never change this after initial setup - it breaks WebAuthn,
+  #         OAuth tokens, and all credentials!
+  #         This is the domain suffix used for user identities (user@domain)
+  #         Example: idm.local, kanidm.internal, yourdomain.com
+  domain: ""
+
+  # Hostname: The hostname part of the FQDN (hostname.domain)
+  #           Combined with domain to build the Origin URL: https://hostname.domain:4869
+  #           Examples:
+  #             - "kanidm" (combines with domain to form kanidm.example.com)
+  #             - "idm" (combines with domain to form idm.yourdomain.com)
+  hostname: ""
+
+  # ==========================================
+  # INITIAL USER ACCOUNT (Required)
+  # ==========================================
+  person_username: ""
+  person_displayname: ""
+  enable_ldap: true
+
+  # ==========================================
+  # TLS CERTIFICATES (Collapsible Section)
+  # ==========================================
+  certificates:
+    type: selfsigned
+    chain_path: ""
+    key_path: ""
+
+  enable_backup: true
+  backup_schedule: "00 22 * * *"
+  backup_versions: 7
+
+  # ==========================================
+  # LDAP SYNC (Collapsible Section - Optional)
+  # ==========================================
+  directory_sync:
+    enabled: false
+    sources: []
+
+  # ==========================================
+  # REPLICATION (Collapsible Section - Optional)
+  # ==========================================
+  replication:
+    enabled: false
+    partners: []
+
+  # ==========================================
+  # DATABASE TUNING (Collapsible Section - Advanced)
+  # ==========================================
+  database:
+    fs_type: other
+    arc_size: 0
+
+  # ==========================================
+  # LOGGING CONFIGURATION (Optional)
+  # ==========================================
+  # Log Level: Logging verbosity
+  #           Options: info, debug, trace
+  #           - info: Normal operation (recommended for production)
+  #           - debug: Detailed debugging information
+  #           - trace: Very verbose tracing (troubleshooting only)
+  #           Default: info
+  #           Note: Kanidm does not support 'warn' or 'error' levels
+  log_level: info
+
+schema:
+  domain: str
+  hostname: str
+  person_username: str
+  person_displayname: str
+  enable_ldap: bool
+  certificates:
+    type: list(selfsigned|letsencrypt|custom)
+    chain_path: str?
+    key_path: str?
+  enable_backup: bool
+  backup_schedule: str
+  backup_versions: int
+  directory_sync:
+    enabled: bool
+    sources:
+    - enabled: bool
+      name: str
+      sync_type: list(ldap|ipa)
+      sync_token: password
+      schedule: str?
+      # LDAP connection fields (use when sync_type=ldap)
+      ldap_uri: str?
+      ldap_ca: str?
+      ldap_sync_dn: str?
+      ldap_sync_pw: password?
+      ldap_sync_base_dn: str?
+      ldap_filter: str?
+      # LDAP attribute mappings (use when sync_type=ldap)
+      person_objectclass: str?
+      person_attr_id: str?
+      person_attr_displayname: str?
+      person_attr_mail: str?
+      group_objectclass: str?
+      group_attr_name: str?
+      group_attr_member: str?
+      # FreeIPA connection fields (use when sync_type=ipa)
+      ipa_uri: str?
+      ipa_ca: str?
+      ipa_sync_dn: str?
+      ipa_sync_pw: password?
+      ipa_sync_base_dn: str?
+      # FreeIPA advanced options (use when sync_type=ipa)
+      skip_invalid_password_formats: bool
+      sync_password_as_unix_password: bool
+      status_bind: str?
+      exclude_entries: str?
+      map_uuid: str?
+      map_name: str?
+      map_gidnumber: str?
+      map_uidnumber: str?
+  replication:
+    enabled: bool
+    partners:
+      - origin: str
+        certificate: str
+        automatic_refresh: bool
+  database:
+    fs_type: list(zfs|other)
+    arc_size: int
+  log_level: list(info|debug|trace)
+
+# Exclude temporary files from backups
+backup_exclude:
+  - "**/*.log"
+  - "**/*.tmp"
+  - "**/cache/**"
+  - "**/temp/**"
