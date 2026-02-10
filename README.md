@@ -2,6 +2,7 @@
 
 ![update-badge](https://img.shields.io/github/last-commit/cordelster/hassio-addons?label=last%20update)
 [![IssueHunt](https://img.shields.io)](https://issuehunt.io)
+
 [paypal-badge]: https://img.shields.io/badge/Donate%20via%20PayPal-0070BA?logo=paypal&style=flat&logoColor=white
 [kofi-badge]: https://img.shields.io/badge/Donate%20via%20KoFi-0070BA?logo=kofi&style=flat&logoColor=white
 
