@@ -1,0 +1,42 @@
+name: Kanidm Manager
+version: 1.0.4
+slug: kanidm-manager
+description: Web UI for managing Kanidm OAuth2 clients, users, and groups
+url: https://github.com/cordelster/ha-addon-kanidm
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+startup: application
+boot: auto
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: Web Interface (if ingress disabled)
+
+# Ingress for Home Assistant sidebar
+ingress: true
+ingress_port: 3000
+panel_icon: mdi:account-cog
+panel_title: Kanidm Manager
+panel_admin: true
+
+hassio_api: false
+hassio_role: default
+auth_api: false
+homeassistant_api: false
+
+options:
+  kanidm_url: "https://192.168.120.198:4869"
+  kanidm_username: "idm_admin"
+  kanidm_password: ""
+  origin: "http://localhost:3000"
+  accept_invalid_certs: true
+
+schema:
+  kanidm_url: str
+  kanidm_username: str
+  kanidm_password: password
+  origin: str
+  accept_invalid_certs: bool
