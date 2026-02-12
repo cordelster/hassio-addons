@@ -1,5 +1,5 @@
 ARG BUILD_FROM
-FROM FROM ghcr.io/cordelster/kanidm-oauth2-manager:latest
+FROM ghcr.io/cordelster/kanidm-oauth2-manager:latest
 
 # Install bashio and dependencies for Home Assistant addon integration
 RUN apt-get update \
