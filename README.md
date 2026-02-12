@@ -8,8 +8,11 @@
 All of these Home Assistant (HASSIO) add-ons I developed for my own personal use, and most have been my private collection for some time and I regularly maintain them.
 
 My primary focus is security first, followed by tenacity for quality, and recently consolidation of powered devices in my homelab brought me to making these addons that I use and rely on regularly.
+You will find that my method focuses highly on performance using an Alpine Linux base when ever I have the oppertunity to devote the time to do so, and I like to build in failsafes where it makes since.
+I definately code a little differently than most and as such, my quallity will be a higher standard than just making a ton of apps, I use and count on most of these to function often every day.
+By trade, I was a storage engineer that managed global Datacenter infrastructure, and I bring that experiance into all my code.
 
-If you have suggestions for a missing application yoou would like to see me implement, open a discussion, if it gets enough attentiion, or peaks my intrest I'll certainly work on it. Alternatively you can open a bounty for requests to get the communnities attention. 
+If you have suggestions for a missing application you would like to see me implement, open a discussion, if it gets enough attentiion, or peaks my intrest I'll certainly work on it. Alternatively you can open a bounty for requests to get the communnities attention. 
 
 I can always use help with documentation as I tend to over do it. If you wish to add to this repo I'm open to collaboration and keeping projects/repos alive.
 
