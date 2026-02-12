@@ -23,7 +23,7 @@ COPY --chmod=755 run.sh /run.sh
 # Labels for Home Assistant
 LABEL io.hass.version="1.0.0" \
       io.hass.type="addon" \
-      io.hass.arch="armhf|aarch64|i386|amd64"
+      io.hass.arch="arm64|aarch64|i386|amd64"
 
 # Override both entrypoint and command to use our script
 ENTRYPOINT []
