@@ -1,6 +1,9 @@
 # Changelog
 
 All notable changes to this addon will be documented in this file.
+## [1.0.5] - 2026-02-11
+- Fork upstream modify to allow multi arch builds
+- Modify arch and source, we maintain our own unless a PR is accepted.
 
 ## [1.0.1] - 2026-02-06
 - Add Documentation and prep for https://github.com/cordelster/hassio-addons

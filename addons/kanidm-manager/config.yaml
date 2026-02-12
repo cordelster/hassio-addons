@@ -1,5 +1,5 @@
 name: Kanidm Manager
-version: 1.0.4
+version: 1.0.5
 slug: kanidm-manager
 description: Web UI for managing Kanidm OAuth2 clients, users, and groups
 url: https://github.com/cordelster/ha-addon-kanidm

@@ -1,5 +1,5 @@
 ARG BUILD_FROM
-FROM ghcr.io/tricked-dev/kanidm-oauth2-manager:latest
+FROM FROM ghcr.io/cordelster/kanidm-oauth2-manager:latest
 
 # Install bashio and dependencies for Home Assistant addon integration
 RUN apt-get update \
@@ -23,7 +23,7 @@ COPY --chmod=755 run.sh /run.sh
 # Labels for Home Assistant
 LABEL io.hass.version="1.0.0" \
       io.hass.type="addon" \
-      io.hass.arch="arm64|aarch64|i386|amd64"
+      io.hass.arch="arm64|aarch64|amd64"
 
 # Override both entrypoint and command to use our script
 ENTRYPOINT []
