@@ -2,8 +2,38 @@
 set -e
 set -o pipefail
 
-# Configuration persistence: Restore options.json BEFORE bashio reads it
+# ==========================================
+# KANIDM HOME ASSISTANT ADDON - MAIN SCRIPT
+# ==========================================
+# This script orchestrates the startup of the Kanidm server.
+# Most logic has been extracted to modular libraries in lib/
+#
+# See CLAUDE.md for architecture overview
+
+# ==========================================
+# SOURCE LIBRARY MODULES
+# ==========================================
+
+LIB_DIR="/usr/local/lib/kanidm"
+
+# Core libraries
+source "${LIB_DIR}/detect_state.sh"      # State detection, marker file management
+source "${LIB_DIR}/version_mgmt.sh"      # Version comparison, upgrade validation
+source "${LIB_DIR}/config_migration.sh"  # Config schema migrations
+
+# Initialization modules
+source "${LIB_DIR}/init_database.sh"     # Database startup, readiness checks
+source "${LIB_DIR}/init_idm_admin.sh"    # idm_admin login with retry logic
+source "${LIB_DIR}/init_person.sh"       # Person account creation
+
+bashio::log.debug "✓ Library modules loaded"
+
+# ==========================================
+# CONFIGURATION PERSISTENCE
+# ==========================================
+# Restore options.json BEFORE bashio reads it
 # This must happen FIRST, before any bashio::config calls
+
 BACKUP_OPTIONS="/config/options.json.backup"
 if [[ -f "${BACKUP_OPTIONS}" ]] && [[ -f "/config/.admin_initialized" ]]; then
   # This is a reinstall (admin_initialized exists) with a config backup
@@ -15,7 +45,10 @@ if [[ -f "${BACKUP_OPTIONS}" ]] && [[ -f "/config/.admin_initialized" ]]; then
   fi
 fi
 
-# General error handler
+# ==========================================
+# ERROR HANDLER
+# ==========================================
+
 error_handler() {
   local exit_code=$?
   local line_no=$1
@@ -295,7 +328,10 @@ validate_integer() {
 
 bashio::log.info "Starting Kanidm addon..."
 
-# Read configuration
+# ==========================================
+# READ CONFIGURATION
+# ==========================================
+
 DOMAIN=$(bashio::config 'domain')
 HOSTNAME=$(bashio::config 'hostname')
 LOG_LEVEL=$(bashio::config 'log_level')
@@ -328,8 +364,9 @@ bashio::log.debug "Configuration: DOMAIN=${DOMAIN}, HOSTNAME=${HOSTNAME}, LOG_LE
 bashio::log.debug "Built ORIGIN=${ORIGIN} (using hardcoded internal port ${WEB_PORT})"
 
 # ==========================================
-# VALIDATE REQUIRED CONFIGURATION
+# VALIDATE CONFIGURATION
 # ==========================================
+
 bashio::log.info "Validating configuration inputs..."
 
 # Validate domain
@@ -353,12 +390,11 @@ if [[ -z "${PERSON_USERNAME}" ]]; then
 fi
 validate_username "${PERSON_USERNAME}" "person_username" || exit 1
 
-# Validate person display name (basic non-empty check)
+# Validate person display name
 if [[ -z "${PERSON_DISPLAYNAME}" ]]; then
     bashio::log.fatal "Person display name is required!"
     exit 1
 fi
-# Display name can contain spaces and special characters, just check reasonable length
 if [[ ${#PERSON_DISPLAYNAME} -lt 2 ]] || [[ ${#PERSON_DISPLAYNAME} -gt 128 ]]; then
     bashio::log.fatal "Person display name must be between 2 and 128 characters: ${PERSON_DISPLAYNAME}"
     exit 1
@@ -367,7 +403,6 @@ bashio::log.debug "✓ person_displayname validated: ${PERSON_DISPLAYNAME}"
 
 # Validate backup schedule (if backups enabled)
 if [[ "${ENABLE_BACKUP}" == "true" ]]; then
-    bashio::log.debug "Validating backup_schedule: '${BACKUP_SCHEDULE}' (length: ${#BACKUP_SCHEDULE})"
     validate_cron_schedule "${BACKUP_SCHEDULE}" "backup_schedule" || exit 1
     validate_integer "${BACKUP_VERSIONS}" 1 365 "backup_versions" || exit 1
 fi
@@ -387,7 +422,79 @@ if [[ "${CERT_TYPE}" == "custom" ]]; then
     fi
 fi
 
-bashio::log.info "✓ All configuration inputs validated successfully"
+bashio::log.info "✓ Configuration validation complete"
+
+# ==========================================
+# DETECT INSTALLATION STATE & VERSION TRACKING
+# ==========================================
+
+bashio::log.info "Detecting installation state..."
+
+# Detect state (FRESH_INSTALL, NORMAL_STARTUP, UPGRADE_REQUIRED, INCONSISTENT_STATE)
+INSTALL_STATE=$(detect_installation_state)
+bashio::log.info "Installation state: ${INSTALL_STATE}"
+
+# Handle different states
+case "${INSTALL_STATE}" in
+    FRESH_INSTALL)
+        bashio::log.info "Fresh installation detected"
+        FIRST_RUN=true
+        ;;
+    
+    NORMAL_STARTUP)
+        bashio::log.info "Normal startup - no version changes"
+        FIRST_RUN=false
+        ;;
+    
+    UPGRADE_REQUIRED)
+        bashio::log.info "Upgrade detected - validating..."
+        FIRST_RUN=false
+        
+        # Validate upgrade path (exits on version skip)
+        validate_upgrade || exit 1
+        
+        # Run pending migrations from previous Kanidm version if version changed
+        if check_kanidm_major_minor_change; then
+            bashio::log.info "Kanidm version changed - running pending migrations from previous version..."
+            run_pending_migrations_from_previous_version || {
+                bashio::log.error "Failed to run pending migrations"
+                exit 1
+            }
+            
+            # Clear migration list for new Kanidm version
+            clear_applied_migrations
+        fi
+        
+        # Run config migrations for current version
+        bashio::log.info "Running config migrations..."
+        run_config_migrations || {
+            bashio::log.error "Config migrations failed"
+            exit 1
+        }
+        ;;
+    
+    INCONSISTENT_STATE)
+        bashio::log.fatal "Inconsistent state: database exists but marker file is missing or empty"
+        bashio::log.fatal "This indicates a corrupted installation or interrupted setup"
+        bashio::log.fatal "Please restore from backup or delete /data/kanidm.db to start fresh"
+        exit 1
+        ;;
+    
+    *)
+        bashio::log.fatal "Unknown installation state: ${INSTALL_STATE}"
+        exit 1
+        ;;
+esac
+
+# Display state information
+show_state_info
+
+
+# ==========================================
+# GENERATE SERVER CONFIGURATION
+# ==========================================
+
+bashio::log.info "Generating server configuration files..."
 
 # Storage Structure:
 # /config (addon_config) - User-accessible, survives reinstall, backed up
@@ -397,8 +504,15 @@ bashio::log.info "✓ All configuration inputs validated successfully"
 # /data - Private addon data, backed up but deleted on uninstall
 #   └── kanidm.db        - Database file (can be large)
 
-# Debug: Show directory locations
-bashio::log.info "User-accessible config directory: /config (survives reinstall)"
+# Create necessary directories
+mkdir -p /config/config
+mkdir -p /config/certs
+mkdir -p /data
+mkdir -p /run/kanidmd
+
+bashio::log.debug "Created directories - checking /config:"
+ls -la /config/ 2>&1 | while IFS= read -r line; do bashio::log.debug "  $line"; done
+
 bashio::log.info "Private data directory: /data (database only)"
 
 # Create necessary directories
@@ -425,7 +539,7 @@ if [[ "${CERT_TYPE}" == "selfsigned" ]]; then
             -keyout /config/certs/key.pem \
             -out /config/certs/cert.pem \
             -days 3650 \
-            -subj "/CN=${DOMAIN}"
+            -subj "/CN=${HOSTNAME}.${DOMAIN}"
         chmod 400 /config/certs/key.pem
         bashio::log.info "Self-signed certificate generated successfully"
     else
@@ -864,237 +978,105 @@ else
     bashio::log.info "Database file DOES NOT EXIST"
 fi
 
-if [[ -f /config/.admin_initialized ]]; then
-    bashio::log.info "Marker file EXISTS - this is NOT a first run"
-    bashio::log.info "Marker file contents:"
-    cat /config/.admin_initialized 2>&1 | while IFS= read -r line; do bashio::log.info "  $line"; done
-    FIRST_RUN=false
-else
-    bashio::log.info "Marker file DOES NOT EXIST - this IS a first run"
-    FIRST_RUN=true
-fi
-
-if [ "$FIRST_RUN" = true ]; then
-    bashio::log.info "First run detected - will initialize admin account..."
-else
-    bashio::log.info "Not first run - skipping admin initialization"
-fi
-
 # ==========================================
-# START KANIDM SERVER AS ROOT
+# START KANIDM SERVER & INITIALIZE DATABASE
 # ==========================================
-# Kanidm runs as root (UID 0) within the container. This is REQUIRED due to
-# Home Assistant's AppArmor + bind mount architecture which prevents:
-# 1. Changing ownership of bind mount points
-# 2. Changing permissions of bind mount points to allow non-root access
 
 bashio::log.info "Starting Kanidm server (running as root for volume access)..."
 bashio::log.info ""
 bashio::log.info "=========================================="
 bashio::log.info "EXPECTED WARNINGS FROM KANIDM"
 bashio::log.info "=========================================="
-bashio::log.info "You will see warnings from kanidm about file "
-bashio::log.info "permissions and ownership. These are expected "
+bashio::log.info "You will see warnings from kanidm about file"
+bashio::log.info "permissions and ownership. These are expected"
 bashio::log.info "due to Home Assistant's volume mount system and"
 bashio::log.info "are SAFE to ignore."
 bashio::log.info "=========================================="
 bashio::log.info ""
 
-# Start the Kanidm server in background
-bashio::log.info "Starting Kanidm server..."
-kanidmd server -c /config/config/server.toml &
-KANIDM_PID=$!
+# Initialize database using modular function
+if ! init_database "/config/config/server.toml" "$WEB_PORT" "$FIRST_RUN"; then
+    bashio::log.fatal "Failed to initialize database"
+    exit 1
+fi
 
-# Wait for server to be ready
-bashio::log.info "Waiting for Kanidm to be ready..."
-for i in {1..30}; do
-    if curl -f -k -s https://localhost:${WEB_PORT}/status > /dev/null 2>&1; then
-        bashio::log.info "Kanidm is ready!"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        bashio::log.fatal "Kanidm failed to start within 30 seconds"
-        kill $KANIDM_PID
-        exit 1
-    fi
-    sleep 1
-done
+# KANIDM_PID is set by init_database
+bashio::log.info "Kanidm server running (PID: ${KANIDM_PID})"
 
-# Initialize admin accounts on first run
+# ==========================================
+# FIRST RUN: INITIALIZE ACCOUNTS
+# ==========================================
+
 if [ "$FIRST_RUN" = true ]; then
-    bashio::log.info "First run: Initializing admin accounts..."
-
-    # Recover admin account (for system configuration)
-    ADMIN_JSON=$(kanidmd recover-account -c /config/config/server.toml admin -o json 2>&1)
-    ADMIN_PASSWORD=$(echo "$ADMIN_JSON" | sed -n 's/.*"password": *"\([^"]*\)".*/\1/p')
-
-    # Recover idm_admin account (for user/group management)
-    IDM_ADMIN_JSON=$(kanidmd recover-account -c /config/config/server.toml idm_admin -o json 2>&1)
-    IDM_ADMIN_PASSWORD=$(echo "$IDM_ADMIN_JSON" | sed -n 's/.*"password": *"\([^"]*\)".*/\1/p')
-
-    bashio::log.debug "DEBUG: Checking admin password recovery results..."
-    bashio::log.debug "DEBUG: ADMIN_PASSWORD length: ${#ADMIN_PASSWORD}"
-    bashio::log.debug "DEBUG: IDM_ADMIN_PASSWORD length: ${#IDM_ADMIN_PASSWORD}"
-
-    if [ -z "$ADMIN_PASSWORD" ] || [ -z "$IDM_ADMIN_PASSWORD" ]; then
-        bashio::log.error "Failed to recover admin accounts!"
-        bashio::log.error "admin output: $ADMIN_JSON"
-        bashio::log.error "idm_admin output: $IDM_ADMIN_JSON"
-        exit 1
-    fi
-
-    bashio::log.debug "DEBUG: Admin passwords recovered successfully, proceeding to display..."
-    bashio::log.info "=========================================="
-    bashio::log.info "Admin accounts initialized successfully!"
-    bashio::log.info "=========================================="
-    bashio::log.info ""
-    bashio::log.info "SYSTEM ADMIN (for server configuration):"
-    bashio::log.info "  Username: admin"
-    bashio::log.info "  Password: ${ADMIN_PASSWORD}"
-    bashio::log.info ""
-    bashio::log.info "IDENTITY ADMIN (for user/group management):"
-    bashio::log.info "  Username: idm_admin"
-    bashio::log.info "  Password: ${IDM_ADMIN_PASSWORD}"
     bashio::log.info ""
     bashio::log.info "=========================================="
-    bashio::log.info "NOTE: These service accounts are for system"
-    bashio::log.info "administration only. Use your person account"
-    bashio::log.info "for normal operations."
+    bashio::log.info "FIRST RUN INITIALIZATION"
     bashio::log.info "=========================================="
-
-    # Create person and service accounts using idm_admin via UNIX socket
+    
+    # ADMIN_PASSWORD and IDM_ADMIN_PASSWORD are exported by init_database
+    
+    # Initialize idm_admin session (with retry logic for expect authentication)
     bashio::log.info ""
     bashio::log.info "Creating user accounts..."
-    bashio::log.debug "DEBUG: About to set environment variables and login..."
-
-    # Set environment variables for kanidm CLI
-    export KANIDM_URL="https://localhost:${WEB_PORT}"
-    export HOME=/root
-    export KANIDM_SKIP_HOSTNAME_VERIFICATION=true
-    export KANIDM_ACCEPT_INVALID_CERTS=true
-    bashio::log.info "Set KANIDM_URL=${KANIDM_URL}"
-    bashio::log.info "Set HOME=${HOME}"
-    bashio::log.info "Set certificate validation: SKIP_HOSTNAME=true, ACCEPT_INVALID=true"
-
-    # Login as idm_admin using expect to handle password prompt
-    # Important: Session tokens are stored in ~/.cache/kanidm/tokens
-    mkdir -p ${HOME}/.cache/kanidm
-    bashio::log.info "Logging in as idm_admin..."
-    bashio::log.debug "DEBUG: Token cache directory: ${HOME}/.cache/kanidm"
-    expect_output=$(expect << EOF
-set timeout 10
-set env(HOME) ${HOME}
-set env(KANIDM_URL) ${KANIDM_URL}
-set env(KANIDM_SKIP_HOSTNAME_VERIFICATION) true
-set env(KANIDM_ACCEPT_INVALID_CERTS) true
-spawn kanidm login -H ${KANIDM_URL} --accept-invalid-certs --skip-hostname-verification -D idm_admin
-expect "Enter password:"
-send "${IDM_ADMIN_PASSWORD}\r"
-expect eof
-EOF
-)
-    expect_exit_code=$?
-
-    bashio::log.debug "DEBUG: Checking for token file..."
-    ls -la ${HOME}/.cache/kanidm/ 2>&1 | while IFS= read -r line; do bashio::log.debug "  $line"; done
-
-    bashio::log.debug "DEBUG: Expect login completed with exit code: ${expect_exit_code}"
-    if [ ${expect_exit_code} -eq 0 ]; then
-        bashio::log.info "Successfully logged in as idm_admin"
-        bashio::log.debug "Expect output: ${expect_output}"
-
-        # Modify the default authentication policy to allow password-only authentication
-        bashio::log.info "Configuring authentication policy to allow password-only login..."
-        # Export environment variables for kanidm CLI to find session token
-        export KANIDM_URL="${KANIDM_URL}"
-        export KANIDM_SKIP_HOSTNAME_VERIFICATION=true
-        export KANIDM_ACCEPT_INVALID_CERTS=true
-        if policy_output=$(kanidm group account-policy credential-type-minimum idm_all_accounts any 2>&1); then
-            bashio::log.info "Successfully configured authentication policy to allow password-only login"
-            bashio::log.debug "Policy output: ${policy_output}"
-        else
-            bashio::log.warning "Could not modify authentication policy - password setting may fail due to MFA requirement"
-            bashio::log.warning "Policy command output: ${policy_output}"
-        fi
-
-        bashio::log.debug "DEBUG: About to create person account..."
-
-        # Create person account (now authenticated via session token)
-        if output=$(kanidm person create "${PERSON_USERNAME}" "${PERSON_DISPLAYNAME}" 2>&1); then
-            bashio::log.info "Person account '${PERSON_USERNAME}' created."
-            bashio::log.debug "${output}"
-
-            # Add person to admin groups (grants full admin rights)
-            bashio::log.debug "DEBUG: About to add user to admin groups..."
-            for GROUP in idm_admins idm_people_admins idm_group_admins; do
-                if output_group=$(kanidm group add-members "${GROUP}" "${PERSON_USERNAME}" 2>&1); then
-                    bashio::log.info "Added '${PERSON_USERNAME}' to group '${GROUP}'"
-                    bashio::log.debug "${output_group}"
-                else
-                    bashio::log.warning "Failed to add '${PERSON_USERNAME}' to group '${GROUP}'"
-                    bashio::log.warning "Details: ${output_group}"
-                fi
-            done
-            bashio::log.debug "DEBUG: Group membership assignment completed"
-
-            # Generate credential reset token for user to set their own password
-            # Token is valid for 24 hours (86400 seconds)
-            bashio::log.info "Generating credential reset token for '${PERSON_USERNAME}'..."
-            reset_token_output=$(kanidm person credential create-reset-token "${PERSON_USERNAME}" 86400 2>&1)
-            reset_token_exit=$?
-
-            if [ ${reset_token_exit} -ne 0 ]; then
-                bashio::log.error "Failed to create reset token for '${PERSON_USERNAME}'"
-                bashio::log.error "Token creation output: ${reset_token_output}"
-                bashio::log.error "You will need to create a reset token manually"
-                exit 1
-            fi
-
-            # Display the complete reset token output (includes QR code, link, and command)
-            bashio::log.info ""
-            bashio::log.info "=========================================="
-            bashio::log.info "CREDENTIAL RESET TOKEN GENERATED"
-            bashio::log.info "=========================================="
-            bashio::log.info ""
-            echo "${reset_token_output}" | while IFS= read -r line; do bashio::log.warning "$line"; done
-            bashio::log.info ""
-            bashio::log.info "=========================================="
-            bashio::log.info "IMPORTANT: Use one of the methods above to"
-            bashio::log.info "set your password. This token expires in"
-            bashio::log.info "24 hours."
-            bashio::log.info "=========================================="
-        else
-            exit_code=$?
-            bashio::log.error "Failed to create person account '${PERSON_USERNAME}' (exit code: ${exit_code})."
-            bashio::log.error "Details: ${output}"
-            exit 1
-        fi
-    else
-        bashio::log.error "Failed to login as idm_admin (exit code: ${expect_exit_code})."
-        bashio::log.error "Details from expect: ${expect_output}"
+    
+    if ! init_idm_admin "https://localhost:${WEB_PORT}" "${IDM_ADMIN_PASSWORD}" "/root" 3; then
+        bashio::log.fatal "Failed to initialize idm_admin session"
+        kill "$KANIDM_PID" 2>/dev/null || true
         exit 1
     fi
-
-
-    bashio::log.debug "DEBUG: About to display final account summary..."
+    
+    # Initialize person account
+    if ! init_person "${PERSON_USERNAME}" "${PERSON_DISPLAYNAME}" 86400; then
+        bashio::log.fatal "Failed to initialize person account"
+        kill "$KANIDM_PID" 2>/dev/null || true
+        exit 1
+    fi
+    
+    # ==========================================
+    # HOME ASSISTANT OAUTH2 GROUP (First Run Only)
+    # ==========================================
+    
+    bashio::log.info ""
+    bashio::log.info "Setting up Home Assistant OAuth2 integration..."
+    
+    # Export variables needed by ha_group.sh
+    export PERSON_USERNAME="${PERSON_USERNAME}"
+    export ORIGIN="${ORIGIN}"
+    export HOME="/root"
+    export KANIDM_URL="https://localhost:${WEB_PORT}"
+    export KANIDM_SKIP_HOSTNAME_VERIFICATION="true"
+    export KANIDM_ACCEPT_INVALID_CERTS="true"
+    
+    # Run the setup script (non-fatal - just a convenience feature)
+    if /usr/local/bin/ha_group.sh; then
+        bashio::log.info "✓ Home Assistant OAuth2 integration available"
+    else
+        bashio::log.warning "Home Assistant OAuth2 setup encountered issues (non-fatal)"
+        bashio::log.warning "You can configure OAuth2 manually later if needed"
+    fi
+    
+    # ==========================================
+    # MARK FIRST RUN COMPLETE
+    # ==========================================
+    
+    # Initialize marker file with version tracking
+    init_marker_file || {
+        bashio::log.error "Failed to initialize marker file"
+        kill "$KANIDM_PID" 2>/dev/null || true
+        exit 1
+    }
+    
     bashio::log.info ""
     bashio::log.info "=========================================="
-    bashio::log.info "USER ACCOUNTS CREATED SUCCESSFULLY!"
+    bashio::log.info "FIRST RUN INITIALIZATION COMPLETE!"
     bashio::log.info "=========================================="
-    bashio::log.info "Person Account:"
-    bashio::log.info "  Username: ${PERSON_USERNAME}"
-    bashio::log.info "  Display Name: ${PERSON_DISPLAYNAME}"
-    bashio::log.info ""
-    bashio::log.info "=========================================="
-    bashio::log.info "Log in with person account to use Kanidm!"
-    bashio::log.info "=========================================="
-
-    # Clean up environment variables
-    unset KANIDM_URL
-
-    bashio::log.debug "DEBUG: Marking first run as complete..."
-    touch /config/.admin_initialized
-    bashio::log.info "First run initialization completed successfully!"
+    
+else
+    # Not first run - update marker file
+    bashio::log.info "Updating installation marker..."
+    update_marker_file || {
+        bashio::log.warning "Failed to update marker file (non-fatal)"
+    }
 fi
 
 bashio::log.debug "DEBUG: Exited first run block, proceeding to setup LDAP sync cron..."

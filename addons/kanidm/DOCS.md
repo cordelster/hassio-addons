@@ -1110,9 +1110,45 @@ backup_versions: 28  # One week of 6-hour backups
 - Home Assistant addon backups: Weekly (via HA UI)
 - External backups: Monthly (copy critical data to external storage)
 
+## Version Management and Upgrades
+
+This addon implements automatic version tracking and validation to ensure safe Kanidm upgrades.
+
+### Version Tracking
+
+On first run, the addon creates a marker file (`/config/.admin_initialized`) that tracks:
+- Kanidm version (e.g., `1.8.5`)
+- Addon version (e.g., `HA.1.0.1-kanidm.1.8.5`)
+- Installation date and last startup time
+- Applied migrations
+
+### Sequential Upgrade Enforcement
+
+**CRITICAL**: Kanidm requires sequential version upgrades. Skipping versions will corrupt your database.
+
+The addon enforces this by:
+- **Allowing**: 1.8.5 → 1.8.6 (patch bump)
+- **Allowing**: 1.8.6 → 1.9.0 (next minor)
+- **Blocking**: 1.8.5 → 1.9.1 (skipped 1.9.0)
+- **Blocking**: 1.9.0 → 1.8.5 (downgrade)
+
+### Upgrade Procedure
+
+1. **Check Current Version**: View addon logs or check `/config/.admin_initialized`
+2. **Upgrade Sequentially**: If multiple versions behind, upgrade one version at a time
+3. **Backup First**: Always create a backup before upgrading
+4. **Monitor Logs**: Watch for migration status and any errors
+
+**If Upgrade Blocked**: You must install the intermediate version first.
+
+Example: To go from 1.8.5 → 1.9.1:
+1. Upgrade to 1.9.0
+2. Wait for startup and migrations to complete
+3. Upgrade to 1.9.1
+
 ## Support and Resources
 
-- **Kanidm Documentation**: https://kanidm.github.io/kanidm/stable/
+- **Kanidm Documentation**: https://kanidm.com/docs/
 - **Kanidm GitHub**: https://github.com/kanidm/kanidm
 - **Home Assistant Community**: https://community.home-assistant.io/
 - **Report Issues**: Check addon logs first, then report issues on the addon repository
@@ -1122,17 +1158,16 @@ backup_versions: 28  # One week of 6-hour backups
 This Home Assistant addon is licensed under the MIT License.
 Kanidm itself is licensed under the MPL-2.0 License.
 
-## TODO:
-- Refactor should be done, I just haven't done it yet.
-- Build process could be improved, both to make install quicker, and save some space.
-- Help upstream to get ldap_sync
+## Developer Comments
 
-# Developer Comments
-Kanidm and LDAP in general is complex. Kudo's to you if you venture into this rabbit hole, and read all the way down to my comment section, you're my type of people.
-Kanidmd is designed by it's developers to mostly be admin managed via it's CLI tool and it's WebUI recently stripped down to a self service token/password portal. 
-Though it is highly robust, secure, and uses modern security practices in a way that probably excedes most expectations. Also I love CLI, and this tool is well designed for it's intent. 
-This journey as most my addons were developed out of my desire to suit my tastes, want to consolidate, reduce my power bill, since I run NetApp, Pure, Cisco, Brocade, type entrprise gear, and typically follow along with my experience in corporate datacenter principals and practices which I bring that experience into these little niche projects that most, likely are not going to jump into or use.
-My stack, now that Kanidm dropped user management is I sync off [einschmidt lldap adddon](https://github.com/einschmidt/hassio-addons) for users and groups, then manage the rest of my homelab in Kanidm. Though each LDAP is like a box of chocolate...
+Kanidm and LDAP in general is complex. Kudos to you if you venture into this rabbit hole, and read all the way down to my comment section, you're my type of people.
+
+Kanidmd is designed by its developers to mostly be admin managed via its CLI tool and its WebUI recently stripped down to a self service token/password portal. Though it is highly robust, secure, and uses modern security practices in a way that probably exceeds most expectations. Also I love CLI, and this tool is well designed for its intent.
+
+This journey as most my addons were developed out of my desire to suit my tastes, want to consolidate, reduce my power bill, since I run NetApp, Pure, Cisco, Brocade, type enterprise gear, and typically follow along with my experience in corporate datacenter principals and practices which I bring that experience into these little niche projects that most, likely are not going to jump into or use.
+
+My stack, now that Kanidm dropped user management is I sync off [einschmidt lldap addon](https://github.com/einschmidt/hassio-addons) for users and groups, then manage the rest of my homelab in Kanidm. Though each LDAP is like a box of chocolate...
+
 To that end, I tried to give some good examples, and your google skills may get a workout, mine still do.
 
 Hope you find your DNS resolving and your Cert's authentic. 

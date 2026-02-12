@@ -5,7 +5,7 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Kanidm from Alpine edge/testing with version pinning
-ARG KANIDM_VERSION=1.8.5-r1
+ARG KANIDM_VERSION=1.8.6-r0
 RUN apk add --no-cache \
     kanidm=${KANIDM_VERSION} \
     kanidm-server=${KANIDM_VERSION} \
@@ -25,15 +25,26 @@ RUN mkdir -p \
     /config/sync \
     /run/kanidmd \
     /var/log/kanidm-sync \
+    /etc/kanidm \
     && chmod 755 /data /config \
     && chmod 750 /config/certs \
-    && chmod 700 /config/backups
+    && chmod 700 /config/backups \
+    && chmod 755 /etc/kanidm
 
 # Declare volumes for documentation and optimization
 VOLUME ["/data", "/config"]
 
-# Copy health check script
+# Copy library modules
+COPY lib/ /usr/local/lib/kanidm/
+RUN chmod -R 755 /usr/local/lib/kanidm/
+
+# Copy migration scripts
+COPY migrations/ /usr/local/share/kanidm/migrations/
+RUN chmod -R 755 /usr/local/share/kanidm/migrations/
+
+# Copy helper scripts
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY --chmod=755 ha_group.sh /usr/local/bin/ha_group.sh
 
 # Copy run script (do this last for better caching)
 COPY --chmod=755 run.sh /run.sh
