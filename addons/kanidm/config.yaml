@@ -1,5 +1,5 @@
 name: Kanidm
-version: HA.1.0.2-kanidm.1.8.6
+version: HA.1.0.4-kanidm.1.8.6
 slug: kanidm
 description: Modern identity management and authentication platform
 url: https://github.com/cordelster/ha-addon-kanidm
@@ -30,7 +30,7 @@ ports_description:
 # webui: "https://[HOST]:[PORT:4869]"
 map:
   - addon_config:rw
-  - ssl:ro
+  - ssl:rw
 hassio_api: true
 hassio_role: default
 auth_api: false

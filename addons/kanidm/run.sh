@@ -531,22 +531,21 @@ ls -la /data/ 2>&1 | while IFS= read -r line; do bashio::log.info "  $line"; don
 bashio::log.info "Configuring TLS certificates (type: ${CERT_TYPE})..."
 
 if [[ "${CERT_TYPE}" == "selfsigned" ]]; then
-    # Auto-generate self-signed certificate in /config/certs/
-    bashio::log.info "Using self-signed certificate (testing only - not suitable for production)"
-    if [[ ! -f /config/certs/cert.pem ]]; then
-        bashio::log.info "Generating self-signed certificate..."
-        openssl req -x509 -nodes -newkey rsa:4096 \
-            -keyout /config/certs/key.pem \
-            -out /config/certs/cert.pem \
-            -days 3650 \
-            -subj "/CN=${HOSTNAME}.${DOMAIN}"
-        chmod 400 /config/certs/key.pem
-        bashio::log.info "Self-signed certificate generated successfully"
-    else
-        bashio::log.info "Using existing self-signed certificate"
-    fi
-    TLS_CHAIN="/config/certs/cert.pem"
-    TLS_KEY="/config/certs/key.pem"
+    # 🤳 Generate JamBoxKanidm SELFIE certificates with proper CA hierarchy
+    bashio::log.info "Using JamBoxKanidm SELFIE certificates (homelab/testing only)"
+    bashio::log.info "SELFIE = Self-signed, Experimental, Lab-use, Fun, Interior-network, Educational"
+
+    # Source SELFIE certificate management library
+    source /usr/local/lib/kanidm/cert_management.sh
+
+    # Generate or verify SELFIE certificate chain
+    # This creates: Root CA, Intermediate CA, Server cert, and chain files
+    # Exports TLS_CHAIN and TLS_KEY for use below
+    manage_selfie_certificates "${HOSTNAME}" "${DOMAIN}" "${IP_ADDRESS:-}"
+
+    # TLS_CHAIN and TLS_KEY are now set by cert_management.sh
+    # TLS_CHAIN="/ssl/JamBoxKanidm-SELFIE-FullChain.pem"
+    # TLS_KEY="/ssl/JamBoxKanidm-SELFIE-Server.key"
 
 elif [[ "${CERT_TYPE}" == "letsencrypt" ]]; then
     # Use Let's Encrypt addon certificates from /ssl/
@@ -1038,17 +1037,60 @@ if [ "$FIRST_RUN" = true ]; then
     
     bashio::log.info ""
     bashio::log.info "Setting up Home Assistant OAuth2 integration..."
-    
+
+    # ==========================================
+    # Detect Home Assistant HTTPS Configuration
+    # ==========================================
+
+    bashio::log.info "Detecting Home Assistant connection scheme..."
+    if curl -sk https://homeassistant:8123 >/dev/null 2>&1; then
+        HA_SCHEME="https"
+        bashio::log.info "  ✓ Home Assistant using HTTPS"
+    else
+        HA_SCHEME="http"
+        bashio::log.info "  ✓ Home Assistant using HTTP"
+    fi
+
+    # ==========================================
+    # Get Dynamic Addon Hostname
+    # ==========================================
+
+    bashio::log.info "Retrieving addon hostname from Supervisor..."
+    ADDON_HOSTNAME=$(curl -s -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/addons/self/info 2>/dev/null | jq -r '.data.hostname // "local-kanidm"')
+    bashio::log.info "  ✓ Addon hostname: ${ADDON_HOSTNAME}"
+
+    # ==========================================
+    # Build OAuth2 URLs
+    # ==========================================
+
+    # Kanidm acts as the OIDC Provider (Issuer)
+    KANIDM_ORIGIN="https://${ADDON_HOSTNAME}:${WEB_PORT}"
+
+    # Home Assistant acts as the OIDC Client (Relying Party)
+    HA_ORIGIN="${HA_SCHEME}://homeassistant:8123"
+
+    bashio::log.info "OAuth2 configuration:"
+    bashio::log.info "  Kanidm (Issuer):        ${KANIDM_ORIGIN}"
+    bashio::log.info "  Home Assistant (Client): ${HA_ORIGIN}"
+    bashio::log.info "  Callback URL:            ${HA_ORIGIN}/auth/oidc/callback"
+
+    # ==========================================
+    # Export Variables for ha_group.sh
+    # ==========================================
+
     # Export variables needed by ha_group.sh
     export PERSON_USERNAME="${PERSON_USERNAME}"
-    export ORIGIN="${ORIGIN}"
+    export KANIDM_ORIGIN="${KANIDM_ORIGIN}"
+    export HA_ORIGIN="${HA_ORIGIN}"
+    export ORIGIN="${KANIDM_ORIGIN}"  # Backward compatibility
     export HOME="/root"
     export KANIDM_URL="https://localhost:${WEB_PORT}"
     export KANIDM_SKIP_HOSTNAME_VERIFICATION="true"
     export KANIDM_ACCEPT_INVALID_CERTS="true"
     
     # Run the setup script (non-fatal - just a convenience feature)
-    if /usr/local/bin/ha_group.sh; then
+    if /usr/local/lib/kanidm/ha_group.sh; then
         bashio::log.info "✓ Home Assistant OAuth2 integration available"
     else
         bashio::log.warning "Home Assistant OAuth2 setup encountered issues (non-fatal)"

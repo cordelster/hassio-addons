@@ -2,7 +2,26 @@
 
 All notable changes to this addon will be documented in this file.
 
-## [HA.1.0.2-kanidm.1.8.6] - 2026-02-11
+## [HA.1.0.4-kanidm.1.8.6] - 2026-02-14
+
+
+### Changed
+- **Replaced Sources**: Updated to Alpine linux v3.23 - HASSIO image
+  - openssl: updated to 3.5
+  - curl:    updated to 8.17
+- **Replaced Source Repo**: Using https://jambox-it.github.io/aports/ as it has package retention
+  - Has LDAP an IPA sync binaries, and built on Alpine v3.23
+  - Provides full images.
+- **Redo Self signed certs**: First in maybe a series revamped to provide full chain.
+    Gathers available information from user configuration as well as the system to 
+    provide a more correct chain of RootCA, IntermediateCA (install as truste root to devices),
+    and server certificates. It's not a industry grade trust, but as close as you  might
+    get using a self generated and signed chain without a real PKS/CA server.
+  - Generated certs are easily identifiable (jamboxkanidn-[certType].pem), incase LetsEncrypt
+    add-on is installed later ( no guessing ) and we are jamming it all in one box.
+
+
+## [HA.1.0.3-kanidm.1.8.6] - 2026-02-11
 Update kanidm to 1.8.6
 
 ## [HA.1.0.2-kanidm.1.8.5] - 2026-02-11

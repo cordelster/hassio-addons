@@ -126,7 +126,7 @@ generate_upgrade_path() {
 
     bashio::log.fatal ""
     bashio::log.fatal "=========================================="
-    bashio::log.fatal "REQUIRED UPGRADE PATH"
+    bashio::log.fatal "🚨 REQUIRED UPGRADE PATH 🚨"
     bashio::log.fatal "=========================================="
     bashio::log.fatal "From: ${from_version}"
     bashio::log.fatal "To: ${to_version}"
@@ -148,7 +148,7 @@ generate_upgrade_path() {
         # Need to go through major version transitions
         for major in $(seq $from_major $((to_major - 1))); do
             local next_major=$((major + 1))
-            bashio::log.fatal "  Step: ${major}.${from_minor}.x → ${major}.$((from_minor + 1)).x → ... → ${major}.9.x → ${next_major}.0.x"
+            bashio::log.fatal "🚨  Step: ${major}.${from_minor}.x → ${major}.$((from_minor + 1)).x → ... → ${major}.9.x → ${next_major}.0.x"
             from_minor=0  # Reset minor for next major version
         done
     fi
@@ -157,7 +157,7 @@ generate_upgrade_path() {
     if [ "$to_minor" -gt "$from_minor" ]; then
         for minor in $(seq $from_minor $((to_minor - 1))); do
             local next_minor=$((minor + 1))
-            bashio::log.fatal "  Step: ${to_major}.${minor}.x → ${to_major}.${next_minor}.x"
+            bashio::log.fatal "🚨  Step: ${to_major}.${minor}.x → ${to_major}.${next_minor}.x"
         done
     fi
 
@@ -178,7 +178,7 @@ handle_version_skip() {
 
     bashio::log.fatal ""
     bashio::log.fatal "=========================================="
-    bashio::log.fatal "UNSUPPORTED KANIDM UPGRADE DETECTED"
+    bashio::log.fatal "🚨 UNSUPPORTED KANIDM UPGRADE DETECTED"
     bashio::log.fatal "=========================================="
     bashio::log.fatal "Previous version: ${prev_version}"
     bashio::log.fatal "Attempted version: ${curr_version}"
@@ -192,7 +192,7 @@ handle_version_skip() {
 
     bashio::log.fatal ""
     bashio::log.fatal "=========================================="
-    bashio::log.fatal "INSTRUCTIONS TO FIX"
+    bashio::log.fatal "🚨🚨🚨 INSTRUCTIONS TO FIX 🚨🚨🚨"
     bashio::log.fatal "=========================================="
     bashio::log.fatal "1. STOP - Do not start this addon version"
     bashio::log.fatal "2. Restore from backup (if available)"

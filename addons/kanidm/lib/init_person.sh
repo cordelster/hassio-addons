@@ -36,7 +36,7 @@ create_person_account() {
         return 0
     else
         local exit_code=$?
-        bashio::log.error "Failed to create person account '${username}' (exit code: ${exit_code})"
+        bashio::log.error "🚨 Failed to create person account '${username}' (exit code: ${exit_code})"
         bashio::log.error "Details: ${output}"
         return 1
     fi
@@ -84,7 +84,7 @@ add_person_to_admin_groups() {
     bashio::log.debug "Group membership assignment completed: ${success_count} succeeded, ${fail_count} failed"
 
     if [ $success_count -eq 0 ]; then
-        bashio::log.error "Failed to add user to any admin groups"
+        bashio::log.error "🚨 Failed to add user to any admin groups"
         return 1
     fi
 

@@ -5,15 +5,23 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Kanidm from Alpine edge/testing with version pinning
-ARG KANIDM_VERSION=1.8.6-r0
+ARG KANIDM_VERSION=1.8.6-r2
+
+RUN apk add --allow-untrusted \
+    --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
+    jambox-keys && apk update
+    
 RUN apk add --no-cache \
     kanidm=${KANIDM_VERSION} \
     kanidm-server=${KANIDM_VERSION} \
-    openssl=~3.1 \
+    kanidm-ldap-sync=${KANIDM_VERSION} \
+    kanidm-ipa-sync=${KANIDM_VERSION} \
+    kanidm-clients=${KANIDM_VERSION} \
+    openssl=~3.5 \
     ca-certificates \
-    curl=~8.14 \
+    curl=~8.17 \
     expect \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
     && rm -rf /var/cache/apk/* /tmp/* /root/.cache
 
 # Create directory structure with proper permissions
@@ -44,7 +52,6 @@ RUN chmod -R 755 /usr/local/share/kanidm/migrations/
 
 # Copy helper scripts
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
-COPY --chmod=755 ha_group.sh /usr/local/bin/ha_group.sh
 
 # Copy run script (do this last for better caching)
 COPY --chmod=755 run.sh /run.sh

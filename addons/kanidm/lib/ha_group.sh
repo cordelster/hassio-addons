@@ -13,12 +13,14 @@ set +e
 bashio::log.info "Creating Home Assistant OAuth2 resources..."
 
 # Environment variables should be set by run.sh:
-# - KANIDM_URL
+# - KANIDM_URL              (e.g., https://localhost:4869)
 # - KANIDM_SKIP_HOSTNAME_VERIFICATION
 # - KANIDM_ACCEPT_INVALID_CERTS
-# - HOME
-# - PERSON_USERNAME
-# - ORIGIN
+# - HOME                    (e.g., /root)
+# - PERSON_USERNAME         (e.g., person)
+# - KANIDM_ORIGIN           (e.g., https://local-kanidm:4869) - OIDC Issuer
+# - HA_ORIGIN               (e.g., https://homeassistant:8123) - OIDC Client
+# - ORIGIN                  (backward compatibility, same as KANIDM_ORIGIN)
 
 # Note: We rely on the session from the idm_admin login in run.sh
 # The token file location can vary, so we don't check for it explicitly
@@ -52,8 +54,10 @@ fi
 sleep 0.5
 
 # Create OAuth2 public client for Home Assistant
+# IMPORTANT: The origin must be the Home Assistant URL, not Kanidm
+# HA is the OAuth2 *client* (Relying Party), Kanidm is the *provider* (Issuer)
 bashio::log.info "Creating OAuth2 client for Home Assistant..."
-if kanidm system oauth2 create-public "homeassistant" "Home Assistant" "${ORIGIN}" 2>&1 | tee /tmp/ha_oauth_setup.log; then
+if kanidm system oauth2 create-public "homeassistant" "Home Assistant" "${HA_ORIGIN}" 2>&1 | tee /tmp/ha_oauth_setup.log; then
     bashio::log.info "  ✓ OAuth2 client created"
 else
     if grep -q "already exists" /tmp/ha_oauth_setup.log; then
@@ -68,8 +72,9 @@ fi
 sleep 0.5
 
 # Add redirect URL for OIDC callback
+# The callback is handled by hass-oidc-auth at /auth/oidc/callback
 bashio::log.info "Configuring OAuth2 redirect URL..."
-if kanidm system oauth2 add-redirect-url "homeassistant" "${ORIGIN}/auth/callback" 2>&1; then
+if kanidm system oauth2 add-redirect-url "homeassistant" "${HA_ORIGIN}/auth/oidc/callback" 2>&1; then
     bashio::log.info "  ✓ Redirect URL configured"
 else
     bashio::log.info "  ✓ Redirect URL already configured"
@@ -100,8 +105,13 @@ bashio::log.info "To configure hass-oidc-auth integration:"
 bashio::log.info "  1. Install hass-oidc-auth from HACS"
 bashio::log.info "  2. Configure with:"
 bashio::log.info "     - Client ID: homeassistant"
-bashio::log.info "     - Issuer URL: ${ORIGIN}"
-bashio::log.info "     - Callback URL: ${ORIGIN}/auth/oidc/callback"
+bashio::log.info "     - Issuer URL: ${KANIDM_ORIGIN}"
+bashio::log.info "     - Callback URL: ${HA_ORIGIN}/auth/oidc/callback"
+bashio::log.info ""
+bashio::log.info "  3. Import SELFIE certificate on your devices:"
+bashio::log.info "     - Download: /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem"
+bashio::log.info "     - Import to OS/browser certificate store"
+bashio::log.info "     - Trust for 'Websites' or 'SSL/TLS'"
 bashio::log.info ""
 bashio::log.info "Note: This is a public client (no secret needed)"
 bashio::log.info "Users in 'homeassistant_admins' group can log in"

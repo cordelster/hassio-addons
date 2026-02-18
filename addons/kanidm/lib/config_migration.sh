@@ -63,7 +63,7 @@ run_migration_script() {
     local script_path="$1"
     local script_name=$(basename "$script_path" .sh)
 
-    bashio::log.info "Running migration: ${script_name}"
+    bashio::log.info "🚧 Running migration: ${script_name}"
 
     # Check if already applied
     if is_migration_applied "$script_name"; then
@@ -73,7 +73,7 @@ run_migration_script() {
 
     # Source the migration script
     if [ ! -f "$script_path" ]; then
-        bashio::log.error "Migration script not found: $script_path"
+        bashio::log.error "🚨 Migration script not found: $script_path"
         return 1
     fi
 
@@ -82,7 +82,7 @@ run_migration_script() {
 
     # Source the script (defines migration function)
     if ! source "$script_path"; then
-        bashio::log.error "Failed to source migration script: $script_path"
+        bashio::log.error "🚨 Failed to source migration script: $script_path"
         return 1
     fi
 
@@ -92,7 +92,7 @@ run_migration_script() {
 
     # Check if function exists
     if ! declare -f "$func_name" > /dev/null; then
-        bashio::log.error "Migration function not found: ${func_name}"
+        bashio::log.error "🚨 Migration function not found: ${func_name}"
         bashio::log.error "Expected function in ${script_path}"
         return 1
     fi
@@ -103,7 +103,7 @@ run_migration_script() {
         add_applied_migration "$script_name"
         return 0
     else
-        bashio::log.error "✗ Migration ${script_name} FAILED"
+        bashio::log.error "🚨 Migration ${script_name} FAILED"
         return 1
     fi
 }
@@ -121,7 +121,7 @@ run_config_migrations() {
     local prev_addon_version=$(read_marker_field "ADDON_VERSION")
     local curr_addon_version=$(get_addon_version)
 
-    bashio::log.info "Checking for config migrations (Kanidm ${kanidm_major_minor})..."
+    bashio::log.info "🚧 Checking for config migrations (Kanidm ${kanidm_major_minor})..."
     bashio::log.debug "  Migration directory: ${migration_dir}"
     bashio::log.debug "  Previous addon: ${prev_addon_version}"
     bashio::log.debug "  Current addon: ${curr_addon_version}"
@@ -185,12 +185,12 @@ run_config_migrations() {
         fi
 
         # This migration is between prev and curr versions - run it
-        bashio::log.info "Applying migration: ${script_name}"
+        bashio::log.info "🚧 Applying migration: ${script_name}"
 
         if run_migration_script "$script_path"; then
             migrations_run=$((migrations_run + 1))
         else
-            bashio::log.error "Migration failed: ${script_name}"
+            bashio::log.error "🚨 Migration failed: ${script_name}"
             return 1
         fi
 
@@ -224,7 +224,7 @@ run_pending_migrations_from_previous_version() {
         return 0
     fi
 
-    bashio::log.info "Checking for pending migrations from Kanidm ${prev_kanidm_major_minor}..."
+    bashio::log.info "🚧 Checking for pending migrations from Kanidm ${prev_kanidm_major_minor}..."
 
     # Temporarily run migrations from old directory
     local kanidm_major_minor="$prev_kanidm_major_minor"
