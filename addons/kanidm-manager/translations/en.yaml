@@ -1,0 +1,53 @@
+configuration:
+  kanidm_url:
+    name: Kanidm URL
+    description: >-
+      Full URL of your Kanidm instance including port.
+      Example: https://192.168.1.100:4869
+      Must be reachable from within the Home Assistant container.
+
+  kanidm_username:
+    name: Kanidm Username
+    description: >-
+      Service account username to authenticate with Kanidm.
+      Default is 'idm_admin'. This account needs sufficient privileges
+      to manage OAuth2 clients, groups, and users.
+
+  kanidm_password:
+    name: Kanidm Password
+    description: >-
+      Password for the Kanidm service account above.
+      For JamBoxKanidm addons, find this in the Kanidm addon logs
+      on first startup (look for 'idm_admin password:').
+
+  origin:
+    name: Origin URL
+    description: >-
+      The URL your browser uses to reach this addon.
+      Used by SvelteKit for CSRF and redirect validation.
+      Example: https://homeassistant.local:8123
+      If using ingress only, set to http://localhost:3000.
+
+  tls:
+    name: TLS Settings
+    description: Certificate trust configuration for the Kanidm connection.
+    fields:
+      ca_cert_path:
+        name: CA Certificate Path
+        description: >-
+          Path to the CA or intermediate certificate that signed your Kanidm
+          server's TLS certificate. Must be under /ssl/ (HA SSL directory).
+          For JamBoxKanidm SELFIE certificates use: /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem
+          For custom PKI, provide a bundle: cat root-ca.crt intermediate.crt > /ssl/chain.crt
+          Leave empty and enable Accept Invalid Certs below as a fallback.
+      accept_invalid_certs:
+        name: Accept Invalid Certificates
+        description: >-
+          Disable TLS certificate validation when connecting to Kanidm.
+          Use only if Kanidm has a self-signed cert and you have not provided
+          a CA cert above. Insecure - prefer ca_cert_path where possible.
+
+network:
+  3000/tcp: >-
+    Direct port access - no authentication enforced. Leave disabled and use
+    the HA sidebar instead. Only enable if you need access without the HA dashboard.

@@ -112,7 +112,11 @@ This addon provides a web interface for:
 2. The interface opens with ingress (no additional login required for HA admins)
 
 ### Via Direct Port (Optional)
-If you disabled ingress, access at:
+Port 3000 is disabled by default. To enable direct access, go to addon **Settings → Network** and assign port 3000.
+
+> **Security note**: Direct port access has no authentication. Use the sidebar via ingress wherever possible.
+
+Once enabled, access at:
 - `http://homeassistant.local:3000`
 - `http://your-ha-ip:3000`
 
@@ -130,7 +134,7 @@ If you disabled ingress, access at:
    - Check Kanidm addon logs for errors
 
 2. **Verify URL is correct**:
-   - For local addon: `https://addon_local_kanidm:4869`
+   - For local addon: `https://192.168.1.100:4869` (use your HA host IP, not `addon_local_kanidm`)
    - For custom domain: Use your configured domain
    - URL must include `https://` protocol
    - URL must include port `:4869`
@@ -174,11 +178,11 @@ If you want to access the Kanidm Manager from outside your Home Assistant instan
 - Login to Home Assistant
 - Use sidebar to access Kanidm Manager
 
-**Option 2: Disable ingress and use port**
-1. Edit addon configuration
-2. Set `ingress: false` in config (requires manual edit)
+**Option 2: Enable direct port access**
+1. Go to addon **Settings → Network**
+2. Assign port 3000 to an external port
 3. Access directly via `http://your-ha-ip:3000`
-4. Configure reverse proxy if needed
+4. Configure a reverse proxy with authentication if exposing externally
 
 ## Security Considerations
 
@@ -193,9 +197,9 @@ If you want to access the Kanidm Manager from outside your Home Assistant instan
 - Consider changing it after initial setup (via Kanidm CLI)
 
 ### Network Security
-- Manager connects to Kanidm using `addon_local_kanidm` (internal network)
-- No external exposure required for local setup
-- If exposing externally, use HTTPS and strong authentication
+- Manager connects to Kanidm using the IP or hostname you configure in `kanidm_url`
+- Traffic between addons stays on the HA internal bridge — no external exposure required for local setup
+- If exposing port 3000 externally, place a reverse proxy with authentication in front of it
 
 ## Related Addons
 
@@ -204,7 +208,7 @@ If you want to access the Kanidm Manager from outside your Home Assistant instan
 
 ## Support and Resources
 
-- **Kanidm Documentation**: https://kanidm.com/docs/
+- **Kanidm Documentation**: https://kanidm.github.io/kanidm/stable/
 - **OAuth2 Manager Source**: https://github.com/Tricked-dev/kanidm-oauth2-manager
 - **Report Issues**: Check addon logs first, then report on GitHub issues for the appropriate problem source. 
 

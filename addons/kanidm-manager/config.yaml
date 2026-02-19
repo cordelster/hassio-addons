@@ -1,5 +1,5 @@
 name: Kanidm Manager
-version: 1.0.5
+version: 1.0.8
 slug: kanidm-manager
 description: Web UI for managing Kanidm OAuth2 clients, users, and groups
 url: https://github.com/cordelster/ha-addon-kanidm
@@ -11,9 +11,9 @@ init: false
 startup: application
 boot: auto
 ports:
-  3000/tcp: 3000
+  3000/tcp: null
 ports_description:
-  3000/tcp: Web Interface (if ingress disabled)
+  3000/tcp: "Direct access bypass (no auth). Leave disabled - use sidebar via Ingress instead."
 
 # Ingress for Home Assistant sidebar
 ingress: true
@@ -21,6 +21,9 @@ ingress_port: 3000
 panel_icon: mdi:account-cog
 panel_title: Kanidm Manager
 panel_admin: true
+
+map:
+  - ssl:ro
 
 hassio_api: false
 hassio_role: default
@@ -32,11 +35,23 @@ options:
   kanidm_username: "idm_admin"
   kanidm_password: ""
   origin: "http://localhost:3000"
-  accept_invalid_certs: true
+
+  # ==========================================
+  # TLS (Collapsible)
+  # ==========================================
+  # Provide a CA certificate to establish trust with self-signed certs.
+  # For JamBoxKanidm SELFIE certs use:
+  #   /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem
+  # Leave empty and enable accept_invalid_certs below as a fallback.
+  tls:
+    ca_cert_path: ""
+    accept_invalid_certs: true
 
 schema:
   kanidm_url: str
   kanidm_username: str
   kanidm_password: password
   origin: str
-  accept_invalid_certs: bool
+  tls:
+    ca_cert_path: str?
+    accept_invalid_certs: bool
