@@ -649,8 +649,9 @@ You can now configure Kanidm, create users, set up OAuth2 applications, etc.
 
 ### Service Account Credentials
 
-This is really kind of (very much) insecure, so I'm open to community input, though currently:
-On first run, you'll also see the `admin` and `idm_admin` service account passwords in the logs:
+Service account passwords are displayed in the addon logs on first run. This is a known trade-off — the logs are ephemeral (Home Assistant purges them after 10 days) and the passwords are only shown once. Community input on improving this workflow is welcome.
+
+On first run, you'll see the `admin` and `idm_admin` service account passwords in the logs:
 
 ```
 ==========================================
@@ -668,7 +669,7 @@ IDENTITY ADMIN (for user/group management):
 ```
 
 **These are for CLI/API use only** - use your person account for the web interface.
-These are more ment for break glass purposes once you have your initial configuration incase my defaults are not enough.
+These are intended for break-glass purposes once you have your initial configuration in place, in case the defaults are insufficient.
 
 ## Account Types
 
@@ -909,8 +910,6 @@ All Kanidm data is stored in the `/data/` directory, which is:
    ```bash
    docker exec addon_local_kanidm kanidm --help
    ```
-optional alternative to to sync with the lldap addon and use it for user/group management, though be aware the passwords/tokens currently do not sync.
-
 **Creating Additional Person Accounts**:
 ```bash
 # From Home Assistant CLI or SSH using the Avanced SSH Addon
@@ -935,9 +934,8 @@ docker exec addon_local_kanidm kanidm group add-members idm_admins <username>
 **Root Cause**: User hasn't set their password yet, or authentication policy requires MFA but only password was set.
 
 **Solution**: This is automatically handled by the addon. On first run, the addon:
-[s]1. Sets the authentication policy to allow password-only login[/s]
-2. Creates the person account
-3. Generates a credential reset token for you to set your password MFA
+1. Creates the person account
+2. Generates a credential reset token for you to set your password
 
 If you still experience this issue:
 1. Check addon logs for "Configuring authentication policy" message
@@ -946,9 +944,9 @@ If you still experience this issue:
 4. If needed, generate a new reset token (see "Creating Additional Person Accounts" above)
 
 ### Cannot save password or MFA
-**Solution**: Do not use the IP to access the WebUI, securities in the application require DNS FQDN to access the UI
-1. If you are using the self genereated certificates, you will be limited to only using Password/TOTP
-2. If you are using your own CA, The CA certificate must be trusted by the client you're using to access. Certificates mmust be done correctly 
+**Solution**: Do not use the IP address to access the Web UI — security requirements in the application require a DNS FQDN.
+1. If you are using the self-generated certificates, you will be limited to Password/TOTP only
+2. If you are using your own CA, the CA certificate must be trusted by the client you are using to access the UI. Certificates must be configured correctly.
 
 
 ### Cannot Access Web Interface
