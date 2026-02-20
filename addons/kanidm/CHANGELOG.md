@@ -2,11 +2,18 @@
 
 All notable changes to this addon will be documented in this file.
 
+## [HA.1.0.5-kanidm.1.9.0] - 2026-02-18
+
+### Changed
+ **UPDATED**: kanidm-1.9.0
+ **FEATURE PREVIEW**: HJSON migration and provisioning folder (config/migrations.d)
+ **FIX**: Cert management date calculation
+
 ## [HA.1.0.4-kanidm.1.8.6] - 2026-02-14
 
 
 ### Changed
-- **Replaced Sources**: Updated to Alpine linux v3.23 - HASSIO image
+- **Replaced Sources**: Updated to Alpine linux v3.23 - HASSI image
   - openssl: updated to 3.5
   - curl:    updated to 8.17
 - **Replaced Source Repo**: Using https://jambox-it.github.io/aports/ as it has package retention

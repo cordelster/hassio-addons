@@ -5,7 +5,7 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Kanidm from Alpine edge/testing with version pinning
-ARG KANIDM_VERSION=1.8.6-r2
+ARG KANIDM_VERSION=1.9.0-r0
 
 RUN apk add --allow-untrusted \
     --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
@@ -21,7 +21,7 @@ RUN apk add --no-cache \
     ca-certificates \
     curl=~8.17 \
     expect \
-    --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
+    --repository=https://jambox-it.github.io/apk-repo/edge/JamBox \
     && rm -rf /var/cache/apk/* /tmp/* /root/.cache
 
 # Create directory structure with proper permissions
@@ -30,6 +30,7 @@ RUN mkdir -p \
     /config/config \
     /config/certs \
     /config/backups \
+    /config/migrations.d \
     /config/sync \
     /run/kanidmd \
     /var/log/kanidm-sync \
@@ -37,6 +38,7 @@ RUN mkdir -p \
     && chmod 755 /data /config \
     && chmod 750 /config/certs \
     && chmod 700 /config/backups \
+    && chmod 750 /config/migrations.d \
     && chmod 755 /etc/kanidm
 
 # Declare volumes for documentation and optimization

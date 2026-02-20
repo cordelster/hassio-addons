@@ -173,7 +173,7 @@ get_addon_version() {
 # ==========================================
 
 # Detect current installation state
-# Returns: FRESH_INSTALL, NORMAL_STARTUP, UPGRADE_REQUIRED, VERSION_SKIP, INCONSISTENT_STATE
+# Returns: FRESH_INSTALL, NORMAL_STARTUP, UPGRADE_REQUIRED
 detect_installation_state() {
     local current_addon_version=$(get_addon_version)
     local current_kanidm_version=$(get_kanidm_version)
@@ -185,14 +185,14 @@ detect_installation_state() {
 
     # Check if marker file exists
     if [ ! -f "$MARKER_FILE" ] || [ ! -s "$MARKER_FILE" ]; then
-        # Check if database exists (might be interrupted install)
+        # Marker missing - could be fresh install or interrupted setup
+        # Let Kanidm validate the DB if it exists - if corrupt, Kanidm will fail clearly
         if [ -f "/data/kanidm.db" ]; then
-            bashio::log.warning "Database exists but marker file is missing"
-            echo "INCONSISTENT_STATE"
-            return 1
+            bashio::log.warning "Database exists but marker file is missing - treating as fresh install"
+            bashio::log.warning "If database is corrupt, Kanidm will fail to start with a clear error"
+        else
+            bashio::log.info "No marker file found - fresh installation"
         fi
-
-        bashio::log.info "No marker file found - fresh installation"
         echo "FRESH_INSTALL"
         return 0
     fi

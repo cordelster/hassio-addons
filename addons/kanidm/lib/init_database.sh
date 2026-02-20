@@ -166,8 +166,9 @@ recover_admin_account() {
     bashio::log.debug "Recovering account: ${account_name}..."
 
     # Recover account and extract password from JSON
+    # Kanidm 1.9.0+ uses 'scripting recover-account' which outputs JSON by default
     local account_json
-    account_json=$(kanidmd recover-account -c "$config_path" "$account_name" -o json 2>&1)
+    account_json=$(kanidmd scripting recover-account -c "$config_path" "$account_name" 2>&1)
 
     if [ $? -ne 0 ]; then
         bashio::log.error "Failed to recover account: ${account_name}"
@@ -175,9 +176,9 @@ recover_admin_account() {
         return 1
     fi
 
-    # Extract password from JSON
+    # Extract password from JSON output: {"status":"ok","output":"<password>"}
     local password
-    password=$(echo "$account_json" | sed -n 's/.*"password": *"\([^"]*\)".*/\1/p')
+    password=$(echo "$account_json" | sed -n 's/.*"output": *"\([^"]*\)".*/\1/p')
 
     if [ -z "$password" ]; then
         bashio::log.error "Failed to extract password for: ${account_name}"

@@ -430,7 +430,7 @@ bashio::log.info "✓ Configuration validation complete"
 
 bashio::log.info "Detecting installation state..."
 
-# Detect state (FRESH_INSTALL, NORMAL_STARTUP, UPGRADE_REQUIRED, INCONSISTENT_STATE)
+# Detect state (FRESH_INSTALL, NORMAL_STARTUP, UPGRADE_REQUIRED)
 INSTALL_STATE=$(detect_installation_state)
 bashio::log.info "Installation state: ${INSTALL_STATE}"
 
@@ -472,14 +472,7 @@ case "${INSTALL_STATE}" in
             exit 1
         }
         ;;
-    
-    INCONSISTENT_STATE)
-        bashio::log.fatal "Inconsistent state: database exists but marker file is missing or empty"
-        bashio::log.fatal "This indicates a corrupted installation or interrupted setup"
-        bashio::log.fatal "Please restore from backup or delete /data/kanidm.db to start fresh"
-        exit 1
-        ;;
-    
+
     *)
         bashio::log.fatal "Unknown installation state: ${INSTALL_STATE}"
         exit 1
@@ -687,6 +680,17 @@ else
 fi
 
 bashio::log.debug "Server configuration generated"
+
+# Entry management migrations directory
+# Place HJSON/JSON files here (e.g. 10-homeassistant.hjson) to provision
+# OAuth2 clients, groups, and users declaratively on server startup.
+MIGRATIONS_DIR="/config/kanidm/migrations.d"
+mkdir -p "${MIGRATIONS_DIR}"
+cat >> /config/config/server.toml <<EOF
+
+migration_path = "${MIGRATIONS_DIR}"
+EOF
+bashio::log.info "Entry management: migrations directory = ${MIGRATIONS_DIR}"
 
 # Directory Sync Configuration (LDAP and FreeIPA)
 if [[ "${ENABLE_LDAP_SYNC}" == "true" ]]; then

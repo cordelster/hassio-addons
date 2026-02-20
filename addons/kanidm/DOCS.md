@@ -66,16 +66,18 @@ Kanidm provides secure authentication services including WebAuthn/passkeys, OAut
 ### TLS Certificates (Collapsible Section)
 
 Kanidm requires TLS certificates for all connections. Configure under the **Certificates** section.
-Make sure you have your DNS configured, or will will find you can not save your credentials. 
+Make sure you have your DNS configured, or you will find you can not save your credentials. 
 
 #### certificates.type
 
 **selfsigned** (default):
-- Auto-generates a self-signed certificate in `/config/certs/`
+- Auto-generates a self-signed certificate in `/ssl/`
 - **Good for**: Testing and internal networks only
 - **Browser warning**: Expected (you'll need to accept the security exception)
 - **No additional configuration needed**: Completely automatic
 - **Warning**: Not suitable for production use
+- You can import /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem into your devices also to create the trust.
+- Added check on application startup will refresh the certs if they are within 30 days of expiring.
 
 **letsencrypt**:
 - Automatically uses Let's Encrypt addon certificates from `/ssl/`

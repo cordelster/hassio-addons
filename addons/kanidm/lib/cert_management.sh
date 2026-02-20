@@ -193,7 +193,9 @@ check_certificate_expiration() {
     expiry_date=$(openssl x509 -in "${cert_file}" -noout -enddate 2>/dev/null | cut -d= -f2)
 
     local expiry_epoch
-    expiry_epoch=$(date -d "${expiry_date}" +%s 2>/dev/null || date -j -f "%b %d %H:%M:%S %Y %Z" "${expiry_date}" +%s 2>/dev/null)
+    # BusyBox date (Alpine) requires -D fmt -d datestring to parse non-epoch strings.
+    # GNU date -d and BSD date -j are both unavailable/incompatible on BusyBox.
+    expiry_epoch=$(date -D "%b %d %H:%M:%S %Y" -d "${expiry_date}" +%s 2>/dev/null)
 
     local current_epoch
     current_epoch=$(date +%s)
