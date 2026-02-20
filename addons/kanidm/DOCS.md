@@ -743,6 +743,11 @@ docker exec addon_local_kanidm kanidm group add-members idm_admins <username>
 
 ## Accessing Kanidm
 
+### Setup hass-oidc-auth integration
+
+- Select type: OpenID
+- URL: https://homeassistant.local:4869/oauth2/openid/homeassistant/.well-known/openid-configuration
+
 ### Web Interface
 
 Access the web interface at your configured origin URL.
