@@ -1,5 +1,5 @@
 name: Kanidm Manager
-version: 1.0.8
+version: 1.0.7
 slug: kanidm-manager
 description: Web UI for managing Kanidm OAuth2 clients, users, and groups
 url: https://github.com/cordelster/ha-addon-kanidm
@@ -31,7 +31,7 @@ auth_api: false
 homeassistant_api: false
 
 options:
-  kanidm_url: "https://192.168.120.198:4869"
+  kanidm_url: "https://??????-kanidm:4869"
   kanidm_username: "idm_admin"
   kanidm_password: ""
   origin: "http://localhost:3000"
@@ -44,8 +44,8 @@ options:
   #   /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem
   # Leave empty and enable accept_invalid_certs below as a fallback.
   tls:
-    ca_cert_path: ""
-    accept_invalid_certs: true
+    ca_cert_path: "/ssl/JamBoxKanidm-SELFIE-CA-Chain.pem"
+    accept_invalid_certs: false
 
 schema:
   kanidm_url: str

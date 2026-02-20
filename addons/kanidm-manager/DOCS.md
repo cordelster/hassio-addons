@@ -11,7 +11,7 @@ Web-based UI for managing Kanidm OAuth2 clients, users, groups, and more.
 
 This addon provides a user-friendly web interface for managing your Kanidm instance without requiring CLI access. It wraps the excellent [kanidm-oauth2-manager](https://github.com/Tricked-dev/kanidm-oauth2-manager) by Tricked-dev.
 
-**Important:** This addon requires the **Kanidm** addon to be installed and running.
+**Important:** This addon, **Kanidm** to be installed and running either with the kanidm addon or external server. 
 
 ## Quick Start
 
@@ -19,31 +19,32 @@ This addon provides a user-friendly web interface for managing your Kanidm insta
 
 1. **Install and configure the Kanidm addon** first
 2. **Note the idm_admin password** from Kanidm addon logs (shown on first run)
+    or configure a independent user with enough rights exclusively for the manager.
 
 ### Configuration
 
 1. **Install this addon** from the addon store
 2. **Configure the connection**:
    ```yaml
-   kanidm_url: "https://YOUR-HA-IP:4869"
+   kanidm_url: "https://b4a83d-kanidm:4869"
    kanidm_username: "idm_admin"
    kanidm_password: "your-password-from-kanidm-logs"
    ```
-   Replace `YOUR-HA-IP` with your Home Assistant's IP address (e.g., `192.168.1.100`)
+   Replace `b4a83d-kanidm` with your IP address for external kanidm installs (e.g., `192.168.1.100`)
 3. **Start the addon**
-4. **Access via sidebar** - Click "Kanidm Manager" in Home Assistant sidebar
+4. **Access via sidebar** - Click "Kanidm Manager" in Home Assistant sidebar, only HA admins have access.
 
 ## Configuration Options
 
 ### kanidm_url
 - **Description**: URL to your Kanidm instance
 - **Required**: Yes
-- **Default**: `https://192.168.120.198:4869` (example - use your HA IP)
+- **Default**: `https://b4a83d-kanidm:4869` (example - use your HA slug)
 - **Format**: Full URL with protocol and port
 
 **For local Kanidm addon:**
 ```yaml
-kanidm_url: "https://192.168.1.100:4869"
+kanidm_url: "https://b4a83d-kanidm:4869"
 ```
 Replace `192.168.1.100` with your Home Assistant's IP address.
 
@@ -52,7 +53,7 @@ Replace `192.168.1.100` with your Home Assistant's IP address.
 kanidm_url: "https://auth.yourdomain.com:4869"
 ```
 
-**Important**: Use your Home Assistant's IP address, not `addon_local_kanidm` or `localhost`. The manager needs a routable address to connect to the Kanidm addon.
+**Important**: If you create certificates, you must include the container slug as a DNS entry.
 
 ### kanidm_username
 - **Description**: Kanidm admin username for management access
@@ -134,7 +135,7 @@ Once enabled, access at:
    - Check Kanidm addon logs for errors
 
 2. **Verify URL is correct**:
-   - For local addon: `https://192.168.1.100:4869` (use your HA host IP, not `addon_local_kanidm`)
+   - For local addon: `https://b4a83d-kanidm:4869` (External, use your HA host IP, not `addon_local_kanidm`)
    - For custom domain: Use your configured domain
    - URL must include `https://` protocol
    - URL must include port `:4869`
@@ -194,11 +195,11 @@ If you want to access the Kanidm Manager from outside your Home Assistant instan
 ### Credentials
 - idm_admin password is shown in logs on first Kanidm run only
 - Store the password securely
-- Consider changing it after initial setup (via Kanidm CLI)
+- Consider changing it after initial setup (via Kanidm CLI), or this addon.
 
 ### Network Security
 - Manager connects to Kanidm using the IP or hostname you configure in `kanidm_url`
-- Traffic between addons stays on the HA internal bridge — no external exposure required for local setup
+- Traffic between addons stays on the HA internal bridge when using the container slug — no external exposure required for local setup
 - If exposing port 3000 externally, place a reverse proxy with authentication in front of it
 
 ## Related Addons
@@ -209,7 +210,8 @@ If you want to access the Kanidm Manager from outside your Home Assistant instan
 ## Support and Resources
 
 - **Kanidm Documentation**: https://kanidm.github.io/kanidm/stable/
-- **OAuth2 Manager Source**: https://github.com/Tricked-dev/kanidm-oauth2-manager
+- **OAuth2 Manager Source**: https://github.com/Tricked-dev/kanidm-oauth2-manager (upstream)
+- **OAuth2 Manager Fork**: https://github.com/cordelster/kanidm-oauth2-manager (fork used by this addon — includes HA ingress, security fixes)
 - **Report Issues**: Check addon logs first, then report on GitHub issues for the appropriate problem source. 
 
  **cordelster/hassio wrapper issues**: https://github.com/cordelster/hassio-addons/issues

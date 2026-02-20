@@ -2,7 +2,8 @@ configuration:
   kanidm_url:
     name: Kanidm URL
     description: >-
-      Full URL of your Kanidm instance including port.
+      Homeassistant slug for kanidm addon. Example: https://b4f223a-kanidm:4869 
+      Full URL of your Kanidm instance including port for external.
       Example: https://192.168.1.100:4869
       Must be reachable from within the Home Assistant container.
 
@@ -11,22 +12,24 @@ configuration:
     description: >-
       Service account username to authenticate with Kanidm.
       Default is 'idm_admin'. This account needs sufficient privileges
-      to manage OAuth2 clients, groups, and users.
+      to manage OAuth2 clients, groups, and users. Encourage creating independent
+      account.
 
   kanidm_password:
     name: Kanidm Password
     description: >-
       Password for the Kanidm service account above.
       For JamBoxKanidm addons, find this in the Kanidm addon logs
-      on first startup (look for 'idm_admin password:').
+      on first startup (look for 'idm_admin password:') Change after creating indepenent
+      account.
 
   origin:
     name: Origin URL
     description: >-
-      The URL your browser uses to reach this addon.
-      Used by SvelteKit for CSRF and redirect validation.
       Example: https://homeassistant.local:8123
       If using ingress only, set to http://localhost:3000.
+      If ports enabled, the URL your browser uses to reach this addon.
+      Used by SvelteKit for CSRF and redirect validation.
 
   tls:
     name: TLS Settings
@@ -39,13 +42,13 @@ configuration:
           server's TLS certificate. Must be under /ssl/ (HA SSL directory).
           For JamBoxKanidm SELFIE certificates use: /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem
           For custom PKI, provide a bundle: cat root-ca.crt intermediate.crt > /ssl/chain.crt
-          Leave empty and enable Accept Invalid Certs below as a fallback.
+          Or leave empty and enable Accept Invalid Certs below as a fallback.
       accept_invalid_certs:
         name: Accept Invalid Certificates
         description: >-
           Disable TLS certificate validation when connecting to Kanidm.
-          Use only if Kanidm has a self-signed cert and you have not provided
-          a CA cert above. Insecure - prefer ca_cert_path where possible.
+          Use only if you have not provided a CA cert above. 
+          Insecure - prefer ca_cert_path where possible.
 
 network:
   3000/tcp: >-

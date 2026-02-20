@@ -1,6 +1,9 @@
 # Changelog
 
 All notable changes to this addon will be documented in this file.
+## [1.0.7] - 2026-02-19
+  **UPDATE Discriptions**: Minor document updates.
+
 ## [1.0.6] - 2026-02-18
 
   **SECURITY PATCH**: block cloud metadata SSRF and add API path allowlist:
