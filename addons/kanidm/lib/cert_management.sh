@@ -104,6 +104,7 @@ generate_server_certificate() {
     local hostname="$1"
     local domain="$2"
     local ip_address="$3"
+    local include_ha_sans="${4:-true}"  # Include HA SANs by default (for single cert scenario)
 
     bashio::log.info "🤳 Taking a SERVER SELFIE..."
 
@@ -113,15 +114,20 @@ generate_server_certificate() {
         addon_hostname=$(curl -s -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
             http://supervisor/addons/self/info 2>/dev/null | jq -r '.data.hostname // empty')
     fi
-    addon_hostname="${addon_hostname:-local-kanidm}"
 
     bashio::log.info "  Building SELFIE with multiple identities:"
-    bashio::log.info "    - homeassistant (internal Docker network)"
-    bashio::log.info "    - ${addon_hostname} (addon slug)"
     bashio::log.info "    - ${hostname}.${domain} (configured FQDN)"
+    if [ "${include_ha_sans}" = "true" ]; then
+        bashio::log.info "    - homeassistant (internal Docker network)"
+        bashio::log.info "    - homeassistant.local (mDNS)"
+    fi
+    if [ -n "${addon_hostname}" ]; then
+        bashio::log.info "    - ${addon_hostname} (addon slug)"
+    fi
     if [ -n "${ip_address}" ]; then
         bashio::log.info "    - ${ip_address} (IP address)"
     fi
+    bashio::log.info "    - 127.0.0.1 (localhost)"
 
     # Generate Server private key (4096-bit RSA)
     if ! openssl genrsa -out "${SERVER_KEY}" 4096; then
@@ -131,11 +137,26 @@ generate_server_certificate() {
     fi
     chmod 400 "${SERVER_KEY}" 2>/dev/null || true
 
-    # Build SAN list
-    local san_list="DNS:homeassistant,DNS:${addon_hostname},DNS:local-kanidm,DNS:${hostname}.${domain}"
+    # Build SAN list - start with FQDN
+    local san_list="DNS:${hostname}.${domain}"
+
+    # Add HA SANs only if not generating separate HA cert
+    if [ "${include_ha_sans}" = "true" ]; then
+        san_list="${san_list},DNS:homeassistant,DNS:homeassistant.local"
+    fi
+
+    # Add addon slug if available from Supervisor
+    if [ -n "${addon_hostname}" ]; then
+        san_list="${san_list},DNS:${addon_hostname}"
+    fi
+
+    # Add IP address if provided
     if [ -n "${ip_address}" ]; then
         san_list="${san_list},IP:${ip_address}"
     fi
+
+    # Add localhost
+    san_list="${san_list},IP:127.0.0.1"
 
     # Generate Server CSR with SANs
     openssl req -new \
@@ -159,6 +180,78 @@ generate_server_certificate() {
     rm -f /tmp/server.csr
 
     bashio::log.info "  ✓ Server SELFIE captured! (Valid 1 year)"
+}
+
+# ============================================
+# Generate Home Assistant Certificate (Separate)
+# ============================================
+generate_ha_certificate() {
+    local ha_hostname="$1"
+    local domain="$2"
+    local ip_address="$3"
+
+    bashio::log.info "🤳 Taking a separate HA SELFIE..."
+
+    local ha_key="${SSL_DIR}/JamBoxKanidm-SELFIE-HA.key"
+    local ha_crt="${SSL_DIR}/JamBoxKanidm-SELFIE-HA.crt"
+    local ha_fullchain="${SSL_DIR}/JamBoxKanidm-SELFIE-HA-FullChain.pem"
+
+    bashio::log.info "  Building HA SELFIE for:"
+    bashio::log.info "    - ${ha_hostname}.${domain} (configured HA FQDN)"
+    bashio::log.info "    - homeassistant (internal Docker network)"
+    bashio::log.info "    - homeassistant.local (mDNS)"
+    if [ -n "${ip_address}" ]; then
+        bashio::log.info "    - ${ip_address} (IP address)"
+    fi
+    bashio::log.info "    - 127.0.0.1 (localhost)"
+
+    # Generate HA private key
+    if ! openssl genrsa -out "${ha_key}" 4096; then
+        bashio::log.error "🚨 Failed to generate HA key at ${ha_key}"
+        return 1
+    fi
+    chmod 400 "${ha_key}" 2>/dev/null || true
+
+    # Build SAN list for HA
+    local san_list="DNS:${ha_hostname}.${domain},DNS:homeassistant,DNS:homeassistant.local"
+
+    # Add IP address if provided
+    if [ -n "${ip_address}" ]; then
+        san_list="${san_list},IP:${ip_address}"
+    fi
+
+    # Add localhost
+    san_list="${san_list},IP:127.0.0.1"
+
+    # Generate HA CSR with SANs
+    openssl req -new \
+        -key "${ha_key}" \
+        -out /tmp/ha.csr \
+        -subj "/CN=${ha_hostname}.${domain}" \
+        -addext "subjectAltName=${san_list}" \
+        2>/dev/null
+
+    # Sign HA certificate with Intermediate CA (1 year)
+    openssl x509 -req -in /tmp/ha.csr \
+        -CA "${INTERMEDIATE_CA_CRT}" \
+        -CAkey "${INTERMEDIATE_CA_KEY}" \
+        -CAcreateserial \
+        -out "${ha_crt}" \
+        -days 365 -sha256 \
+        -copy_extensions copy \
+        2>/dev/null
+
+    chmod 644 "${ha_crt}"
+    rm -f /tmp/ha.csr
+
+    # Create HA Full Chain (HA cert + Intermediate)
+    cat "${ha_crt}" "${INTERMEDIATE_CA_CRT}" > "${ha_fullchain}"
+    chmod 644 "${ha_fullchain}"
+
+    bashio::log.info "  ✓ HA SELFIE captured! (Valid 1 year)"
+    bashio::log.info "  ✓ HA certificate files created:"
+    bashio::log.info "     - ${ha_fullchain} (use for HA ssl_certificate)"
+    bashio::log.info "     - ${ha_key} (use for HA ssl_key)"
 }
 
 # ============================================
@@ -220,6 +313,7 @@ manage_selfie_certificates() {
     local hostname="$1"
     local domain="$2"
     local ip_address="${3:-}"
+    local ha_hostname="${4:-}"  # Optional HA hostname
 
     bashio::log.info ""
     bashio::log.info "=========================================="
@@ -243,9 +337,11 @@ manage_selfie_certificates() {
     fi
 
     # Check if Intermediate CA exists
+    local ca_regenerated=false
     if [ ! -f "${INTERMEDIATE_CA_KEY}" ] || [ ! -f "${INTERMEDIATE_CA_CRT}" ]; then
         bashio::log.info "No Intermediate CA found - generating SELFIE intermediate..."
         generate_intermediate_ca
+        ca_regenerated=true
     else
         bashio::log.info "✓ Intermediate CA already exists"
     fi
@@ -255,15 +351,82 @@ manage_selfie_certificates() {
     if [ ! -f "${SERVER_KEY}" ] || [ ! -f "${SERVER_CRT}" ]; then
         bashio::log.info "No Server certificate found - taking new SELFIE..."
         need_server_cert=true
+    elif [ "${ca_regenerated}" = true ]; then
+        bashio::log.warning "CA was regenerated - server cert no longer valid (signed by old CA)"
+        bashio::log.info "Regenerating server certificate..."
+        need_server_cert=true
     elif ! check_certificate_expiration "${SERVER_CRT}" "Server certificate"; then
         bashio::log.info "Server certificate expired or expiring soon - retaking SELFIE..."
         need_server_cert=true
     else
-        bashio::log.info "✓ Server certificate is valid"
+        # Verify cert chains to current Intermediate CA (not using CA_CHAIN file which doesn't exist yet)
+        # Create temporary chain for validation
+        cat "${ROOT_CA_CRT}" "${INTERMEDIATE_CA_CRT}" > /tmp/temp_ca_chain.pem
+        if ! openssl verify -CAfile /tmp/temp_ca_chain.pem "${SERVER_CRT}" >/dev/null 2>&1; then
+            bashio::log.warning "Server certificate doesn't chain to current CA"
+            bashio::log.info "Regenerating server certificate..."
+            need_server_cert=true
+            rm -f /tmp/temp_ca_chain.pem
+        else
+            bashio::log.info "✓ Server certificate is valid"
+            rm -f /tmp/temp_ca_chain.pem
+        fi
+    fi
+
+    # Determine if we're generating separate HA cert
+    local separate_ha_cert=false
+    if [ -n "${ha_hostname}" ] && [ "${ha_hostname}" != "${hostname}" ]; then
+        separate_ha_cert=true
     fi
 
     if [ "${need_server_cert}" = true ]; then
-        generate_server_certificate "${hostname}" "${domain}" "${ip_address}"
+        if [ "${separate_ha_cert}" = true ]; then
+            # Don't include HA SANs in Kanidm cert (they'll be in separate HA cert)
+            generate_server_certificate "${hostname}" "${domain}" "${ip_address}" "false"
+        else
+            # Include HA SANs in Kanidm cert (single cert for both)
+            generate_server_certificate "${hostname}" "${domain}" "${ip_address}" "true"
+        fi
+    fi
+
+    # Generate separate HA certificate if ha_hostname is different
+    if [ "${separate_ha_cert}" = true ]; then
+        bashio::log.info ""
+        bashio::log.info "Separate HA hostname detected (${ha_hostname} != ${hostname})"
+
+        # Check if HA certificate needs regeneration
+        local need_ha_cert=false
+        local ha_crt="${SSL_DIR}/JamBoxKanidm-SELFIE-HA.crt"
+        local ha_key="${SSL_DIR}/JamBoxKanidm-SELFIE-HA.key"
+
+        if [ ! -f "${ha_key}" ] || [ ! -f "${ha_crt}" ]; then
+            bashio::log.info "No HA certificate found - generating..."
+            need_ha_cert=true
+        elif [ "${ca_regenerated}" = true ]; then
+            bashio::log.warning "CA was regenerated - HA cert no longer valid (signed by old CA)"
+            bashio::log.info "Regenerating HA certificate..."
+            need_ha_cert=true
+        elif ! check_certificate_expiration "${ha_crt}" "HA certificate"; then
+            bashio::log.info "HA certificate expired or expiring soon - regenerating..."
+            need_ha_cert=true
+        else
+            # Verify HA cert chains to current CA
+            cat "${ROOT_CA_CRT}" "${INTERMEDIATE_CA_CRT}" > /tmp/temp_ca_chain.pem
+            if ! openssl verify -CAfile /tmp/temp_ca_chain.pem "${ha_crt}" >/dev/null 2>&1; then
+                bashio::log.warning "HA certificate doesn't chain to current CA"
+                bashio::log.info "Regenerating HA certificate..."
+                need_ha_cert=true
+                rm -f /tmp/temp_ca_chain.pem
+            else
+                bashio::log.info "✓ HA certificate is valid"
+                rm -f /tmp/temp_ca_chain.pem
+            fi
+        fi
+
+        if [ "${need_ha_cert}" = true ]; then
+            bashio::log.info "Generating dedicated HA certificate..."
+            generate_ha_certificate "${ha_hostname}" "${domain}" "${ip_address}"
+        fi
     fi
 
     # Always recreate chain files (they're cheap)

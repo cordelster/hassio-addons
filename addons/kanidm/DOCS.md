@@ -743,8 +743,10 @@ docker exec addon_local_kanidm kanidm group add-members idm_admins <username>
 
 ## Accessing Kanidm
 
-### Setup hass-oidc-auth integration
-
+### Setup Home Assistant hass-oidc-auth integration
+#### Requires ![hass-additional-ca](https://github.com/Athozs/hass-additional-ca)
+ The Cert file "JamBoxKanidm-SELFIE-CA-Chain.pem" must be configured with hass-additional-ca and is critical for OpenID to work with kanidm
+ 
 - Select type: OpenID
 - URL: https://homeassistant.local:4869/oauth2/openid/homeassistant/.well-known/openid-configuration
 

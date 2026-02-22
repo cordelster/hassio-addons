@@ -2,6 +2,13 @@
 
 All notable changes to this addon will be documented in this file.
 
+## [HA.1.0.6-kanidm.1.9.0] - 2026-02-18
+
+### Changed
+ **Moved migrations.d folder**: to the root of kanidms config directory. The upgrade script will
+   move any files automatically for upgrades coming from HA.1.0.5-kanidm.1.9.0
+ 
+ 
 ## [HA.1.0.5-kanidm.1.9.0] - 2026-02-18
 
 ### Changed

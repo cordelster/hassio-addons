@@ -334,6 +334,7 @@ bashio::log.info "Starting Kanidm addon..."
 
 DOMAIN=$(bashio::config 'domain')
 HOSTNAME=$(bashio::config 'hostname')
+HA_HOSTNAME=$(bashio::config 'ha_hostname')
 LOG_LEVEL=$(bashio::config 'log_level')
 PERSON_USERNAME=$(bashio::config 'person_username')
 PERSON_DISPLAYNAME=$(bashio::config 'person_displayname')
@@ -533,8 +534,9 @@ if [[ "${CERT_TYPE}" == "selfsigned" ]]; then
 
     # Generate or verify SELFIE certificate chain
     # This creates: Root CA, Intermediate CA, Server cert, and chain files
+    # If ha_hostname differs, also generates separate HA certificate
     # Exports TLS_CHAIN and TLS_KEY for use below
-    manage_selfie_certificates "${HOSTNAME}" "${DOMAIN}" "${IP_ADDRESS:-}"
+    manage_selfie_certificates "${HOSTNAME}" "${DOMAIN}" "${IP_ADDRESS:-}" "${HA_HOSTNAME:-}"
 
     # TLS_CHAIN and TLS_KEY are now set by cert_management.sh
     # TLS_CHAIN="/ssl/JamBoxKanidm-SELFIE-FullChain.pem"
@@ -684,7 +686,7 @@ bashio::log.debug "Server configuration generated"
 # Entry management migrations directory
 # Place HJSON/JSON files here (e.g. 10-homeassistant.hjson) to provision
 # OAuth2 clients, groups, and users declaratively on server startup.
-MIGRATIONS_DIR="/config/kanidm/migrations.d"
+MIGRATIONS_DIR="/config/migrations.d"
 mkdir -p "${MIGRATIONS_DIR}"
 cat >> /config/config/server.toml <<EOF
 
@@ -1072,7 +1074,12 @@ if [ "$FIRST_RUN" = true ]; then
     KANIDM_ORIGIN="https://${ADDON_HOSTNAME}:${WEB_PORT}"
 
     # Home Assistant acts as the OIDC Client (Relying Party)
-    HA_ORIGIN="${HA_SCHEME}://homeassistant:8123"
+    # Use ha_hostname if set, otherwise use same hostname as Kanidm
+    if [ -n "${HA_HOSTNAME}" ]; then
+        HA_ORIGIN="https://${HA_HOSTNAME}.${DOMAIN}:8123"
+    else
+        HA_ORIGIN="https://${HOSTNAME}.${DOMAIN}:8123"
+    fi
 
     bashio::log.info "OAuth2 configuration:"
     bashio::log.info "  Kanidm (Issuer):        ${KANIDM_ORIGIN}"

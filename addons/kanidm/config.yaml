@@ -1,5 +1,5 @@
 name: Kanidm
-version: HA.1.0.5-kanidm.1.9.0
+version: HA.1.0.6-kanidm.1.9.0
 slug: kanidm
 description: Modern identity management and authentication platform
 url: https://github.com/cordelster/ha-addon-kanidm
@@ -39,7 +39,7 @@ apparmor: true
 
 options:
   # ==========================================
-  # DOMAIN AND HOSTNAME CONFIGURATION (Required)
+  # DOMAIN AND Kanidm HOSTNAME CONFIGURATION (Required)
   # ==========================================
   # Domain: DNS domain name for Kanidm identities
   #         CRITICAL: Never change this after initial setup - it breaks WebAuthn,
@@ -48,18 +48,29 @@ options:
   #         Example: idm.local, kanidm.internal, yourdomain.com
   domain: ""
 
-  # Hostname: The hostname part of the FQDN (hostname.domain)
-  #           Combined with domain to build the Origin URL: https://hostname.domain:4869
-  #           Examples:
-  #             - "kanidm" (combines with domain to form kanidm.example.com)
-  #             - "idm" (combines with domain to form idm.yourdomain.com)
+  # Kanidm Hostname: The hostname part of the FQDN (hostname.domain)
+  #                  Combined with domain to build the Origin URL: https://hostname.domain:4869
+  #                  Examples:
+  #                    - "kanidm" (combines with domain to form kanidm.example.com)
+  #                    - "auth" (combines with domain to form auth.yourdomain.com)
   hostname: ""
+
+  # Home Assistant Hostname: Hostname for HA OAuth2 redirect URL (optional)
+  #                          If empty, uses the same hostname as Kanidm above
+  #                          If set, OAuth2 redirect will use: https://ha_hostname.domain:8123
+  #                          Examples:
+  #                            - "" (empty - uses same as Kanidm: auth.yourdomain.com)
+  #                            - "ha" (uses ha.yourdomain.com)
+  #                            - "homeassistant" (uses homeassistant.yourdomain.com)
+  #                          Note: If different from hostname, a separate HA certificate will be generated
+  ha_hostname: ""
 
   # ==========================================
   # INITIAL USER ACCOUNT (Required)
   # ==========================================
   person_username: ""
   person_displayname: ""
+
   enable_ldap: true
 
   # ==========================================
@@ -99,17 +110,18 @@ options:
   # LOGGING CONFIGURATION (Optional)
   # ==========================================
   # Log Level: Logging verbosity
-  #           Options: info, debug, trace
-  #           - info: Normal operation (recommended for production)
-  #           - debug: Detailed debugging information
-  #           - trace: Very verbose tracing (troubleshooting only)
-  #           Default: info
-  #           Note: Kanidm does not support 'warn' or 'error' levels
+  # Options: info, debug, trace
+  #   info: Normal operation (recommended for production)
+  #   debug: Detailed debugging information
+  #   trace: Very verbose tracing (troubleshooting only)
+  #  Default: info
+  #  Note: Kanidm does not support 'warn' or 'error' levels
   log_level: info
 
 schema:
   domain: str
   hostname: str
+  ha_hostname: str?
   person_username: str
   person_displayname: str
   enable_ldap: bool

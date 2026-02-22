@@ -141,12 +141,16 @@ run_config_migrations() {
     fi
 
     # Parse version numbers for comparison
-    parse_semantic_version "$prev_addon_version"
+    # Extract just the HA version part (HA.1.0.5-kanidm.1.9.0 → 1.0.5)
+    local prev_ha_version=$(echo "$prev_addon_version" | sed -E 's/^HA\.([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+    local curr_ha_version=$(echo "$curr_addon_version" | sed -E 's/^HA\.([0-9]+\.[0-9]+\.[0-9]+)-.*/\1/')
+
+    parse_semantic_version "$prev_ha_version"
     local prev_ha_major=$VERSION_MAJOR
     local prev_ha_minor=$VERSION_MINOR
     local prev_ha_patch=$VERSION_PATCH
 
-    parse_semantic_version "$curr_addon_version"
+    parse_semantic_version "$curr_ha_version"
     local curr_ha_major=$VERSION_MAJOR
     local curr_ha_minor=$VERSION_MINOR
     local curr_ha_patch=$VERSION_PATCH

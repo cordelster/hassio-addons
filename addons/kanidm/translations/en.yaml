@@ -8,12 +8,21 @@ configuration:
       and all credentials! This is NOT the access URL. Examples: idm.local,
       kanidm.internal, yourdomain.com
   hostname:
-    name: Hostname
+    name: Kanidm Hostname
     description: >-
       Hostname part of the FQDN (combined with domain to form hostname.domain).
-      This builds the Origin URL as https://hostname.domain:4869. Examples:
-      "kanidm" (forms kanidm.example.com), "idm" (forms idm.yourdomain.com).
+      This builds the Kanidm Origin URL as https://hostname.domain:4869. Examples:
+      "kanidm" (forms kanidm.example.com), "auth" (forms auth.yourdomain.com).
       Note: Runs on port 4869 internally. Change external port in Network settings if needed.
+  ha_hostname:
+    name: Home Assistant Hostname (Optional)
+    description: >-
+      Hostname for Home Assistant OAuth2 redirect URL. If empty, uses the same hostname
+      as Kanidm. If set, OAuth2 redirect will use https://ha_hostname.domain:8123.
+      Examples: "" (empty - reuses Kanidm hostname), "ha" (creates ha.yourdomain.com),
+      "homeassistant" (creates homeassistant.yourdomain.com). Note: If different from
+      Kanidm hostname, a separate SELFIE certificate will be generated automatically
+      for Home Assistant.
   person_username:
     name: Initial User Username
     description: >-
