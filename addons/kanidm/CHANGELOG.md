@@ -2,6 +2,12 @@
 
 All notable changes to this addon will be documented in this file.
 
+## [HA.1.0.7-kanidm.1.9.1] - 2026-02-18
+
+### Changed
+**Update kanidm:** 1.9.1
+
+
 ## [HA.1.0.6-kanidm.1.9.0] - 2026-02-18
 
 ### Changed
