@@ -1,5 +1,5 @@
 name: Kanidm
-version: HA.1.0.6-kanidm.1.9.0
+version: HA.1.0.7-kanidm.1.9.1
 slug: kanidm
 description: Modern identity management and authentication platform
 url: https://github.com/cordelster/ha-addon-kanidm
