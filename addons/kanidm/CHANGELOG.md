@@ -2,10 +2,24 @@
 
 All notable changes to this addon will be documented in this file.
 
-## [HA.1.0.7-kanidm.1.9.1] - 2026-02-18
+## [HA.1.0.8-kanidm.1.9.2] - 2026-03-16
 
 ### Changed
+
+**Update kanidm:** 1.9.2
+ - Resolve incorrect handling of urlencoded client_ids in OAuth2
+ - Resolve incorrect parsing of ldap filters in ldap migration tools
+ - Remove thread local storage in nss_kanidm due to glibc limitations
+ - Disable multithreading on RADIUS when debug is disabled
+**ADD:** Fuction to run preupgrade DB check. 
+
+## [HA.1.0.7-kanidm.1.9.1] - 2026-03-02
+
+### Changed
+
 **Update kanidm:** 1.9.1
+ - Warn users before leaving credential update page.
+ - Improve constraints on migrations feature to prevent users manipulating some critical system entries.
 
 
 ## [HA.1.0.6-kanidm.1.9.0] - 2026-02-18

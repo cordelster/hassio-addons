@@ -215,6 +215,38 @@ handle_version_skip() {
 # UPGRADE VALIDATION
 # ==========================================
 
+# Run kanidmd domain upgrade-check and verify database is ready for upgrade
+# Usage: check_database_upgrade_ready
+# Returns: 0 if PASS, 1 if FAIL or error
+check_database_upgrade_ready() {
+    local config_file="${1:-/config/config/server.toml}"
+    local upgrade_output
+
+    bashio::log.info "Running database upgrade pre-check..."
+
+    if [ ! -f "$config_file" ]; then
+        bashio::log.error "Server config not found: ${config_file}"
+        return 1
+    fi
+
+    upgrade_output=$(kanidmd domain upgrade-check -c "$config_file" 2>&1)
+
+    # Log every line of the output
+    while IFS= read -r line; do
+        bashio::log.info "  upgrade-check: ${line}"
+    done <<< "$upgrade_output"
+
+    # Match "status" followed by optional whitespace, a colon, optional whitespace, and "PASS"
+    if echo "$upgrade_output" | grep -qiE "status[[:space:]]*:[[:space:]]*PASS"; then
+        bashio::log.info "✓ Database upgrade-check passed"
+        return 0
+    fi
+
+    bashio::log.error "Database upgrade-check did not return PASS"
+    bashio::log.error "The database may not be ready for upgrade — resolve reported issues before proceeding"
+    return 1
+}
+
 # Validate upgrade is safe
 # Usage: validate_upgrade
 # Returns: 0 if safe, exits on error
@@ -234,6 +266,20 @@ validate_upgrade() {
     fi
 
     bashio::log.info "✓ Upgrade path validated (sequential)"
+
+    # Run database upgrade pre-check
+    if ! check_database_upgrade_ready; then
+        bashio::log.fatal ""
+        bashio::log.fatal "=========================================="
+        bashio::log.fatal "🚨 DATABASE UPGRADE PRE-CHECK FAILED"
+        bashio::log.fatal "=========================================="
+        bashio::log.fatal "The database is not ready to be upgraded."
+        bashio::log.fatal "Review the upgrade-check output above for details."
+        bashio::log.fatal "DO NOT CONTINUE - resolve reported issues first."
+        bashio::log.fatal "=========================================="
+        exit 1
+    fi
+
     return 0
 }
 
@@ -264,5 +310,6 @@ export -f compare_versions
 export -f detect_version_skip
 export -f generate_upgrade_path
 export -f handle_version_skip
+export -f check_database_upgrade_ready
 export -f validate_upgrade
 export -f check_kanidm_major_minor_change

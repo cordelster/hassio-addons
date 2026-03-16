@@ -5,7 +5,7 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Kanidm from Alpine edge/testing with version pinning
-ARG KANIDM_VERSION=1.9.1-r0
+ARG KANIDM_VERSION=1.9.2-r0
 
 RUN apk add --allow-untrusted \
     --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
