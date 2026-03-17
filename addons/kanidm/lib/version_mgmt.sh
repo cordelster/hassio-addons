@@ -267,19 +267,6 @@ validate_upgrade() {
 
     bashio::log.info "✓ Upgrade path validated (sequential)"
 
-    # Run database upgrade pre-check
-    if ! check_database_upgrade_ready; then
-        bashio::log.fatal ""
-        bashio::log.fatal "=========================================="
-        bashio::log.fatal "🚨 DATABASE UPGRADE PRE-CHECK FAILED"
-        bashio::log.fatal "=========================================="
-        bashio::log.fatal "The database is not ready to be upgraded."
-        bashio::log.fatal "Review the upgrade-check output above for details."
-        bashio::log.fatal "DO NOT CONTINUE - resolve reported issues first."
-        bashio::log.fatal "=========================================="
-        exit 1
-    fi
-
     return 0
 }
 
