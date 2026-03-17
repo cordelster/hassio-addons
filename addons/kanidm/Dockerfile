@@ -6,9 +6,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Kanidm from Alpine edge/testing with version pinning
 ARG KANIDM_VERSION=1.9.2-r0
+ARG JB_REPO=v3.23
 
 RUN apk add --allow-untrusted \
-    --repository=https://jambox-it.github.io/apk-repo/v3.23/JamBox \
+    --repository=https://jambox-it.github.io/apk-repo/${JB_REPO}/JamBox \
     jambox-keys && apk update
     
 RUN apk add --no-cache \
@@ -21,7 +22,7 @@ RUN apk add --no-cache \
     ca-certificates \
     curl=~8.17 \
     expect \
-    --repository=https://jambox-it.github.io/apk-repo/edge/JamBox \
+    --repository=https://jambox-it.github.io/apk-repo/${JB_REPO}/JamBox \
     && rm -rf /var/cache/apk/* /tmp/* /root/.cache
 
 # Create directory structure with proper permissions
