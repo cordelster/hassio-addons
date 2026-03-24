@@ -1,3 +1,9 @@
+[![Donate via PayPal][paypal-badge]](https://www.paypal.com/donate/?hosted_button_id=5RBTFAV64XGJ2)
+![update-badge](https://img.shields.io/github/last-commit/cordelster/hassio-addons?label=last%20update)
+[![IssueHunt](https://img.shields.io/badge/IssueHunt-%24-brightgreen.svg)](https://issuehunt.io/r/cordelster/hassio-addons)
+
+[paypal-badge]: https://img.shields.io/badge/Donate%20via%20PayPal-0070BA?logo=paypal&style=flat&logoColor=white
+
 # ha-stepca — Setup & Configuration Guide
 
 ## Overview
@@ -325,3 +331,6 @@ Enable port 8099 in the addon **Network** settings.
 - [step-ca documentation](https://smallstep.com/docs/step-ca)
 - [step CLI reference](https://smallstep.com/docs/step-cli)
 - [Home Assistant Add-on Security](https://developers.home-assistant.io/docs/add-ons/security)
+
+[kofi-badge]: https://img.shields.io/badge/Donate%20via%20KoFi-0070BA?logo=kofi&style=flat&logoColor=white
+[![Donate via ko-fi][kofi-badge]](https://ko-fi.com/L3L0V38OP)
