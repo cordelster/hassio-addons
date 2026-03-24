@@ -1,0 +1,117 @@
+name: HA stepCA (Certificate Authority)
+version: "0.0.8"
+slug: stepca
+description: High-performance PKI Certificate Authority (step-ca) for advanced labs
+image: ghcr.io/cordelster/ha-stepca/stepca:{version}-{arch}
+arch:
+  - amd64
+  - aarch64
+startup: services
+boot: manual
+init: false
+apparmor: false
+ports:
+  443/tcp: 443
+  8099/tcp: 8099
+  18080/tcp:
+ports_description:
+  443/tcp: step-ca PKI/Certificate Authority
+  8099/tcp: Web Management Interface (HTTP or HTTPS — cert paths in config enable SSL)
+hassio_api: true
+hassio_role: default
+auth_api: false
+homeassistant_api: false
+map:
+  - ssl:rw
+  - share:rw
+  - addon_config:rw
+ingress: true
+ingress_port: 18080
+options:
+  # System Configuration
+  hostname: "pki-server"
+  domain_name: "home.local"
+
+  # Certificate Defaults
+  certificate_defaults:
+    default_cert_validity_days: 365
+    default_key_size: "2048"
+    default_key_type: "RSA"
+
+  # Certificate Renewal
+  # Renewal threshold follows the ACME 1/3-lifetime model: each cert is renewed
+  # when less than 1/3 of its issued lifetime remains (e.g. 90-day cert → 30 days,
+  # 365-day cert → ~122 days). No fixed threshold is needed.
+  certificate_renewal:
+    cert_renewal_enabled: true
+    cert_renewal_check_interval_hours: 24
+    cert_renewal_restart_services: true
+
+  # Certificate Notifications
+  certificate_notifications:
+    cert_notify_enabled: true
+    cert_notify_critical_days: 7
+    cert_notify_warning_days: 30
+
+  # Home Assistant Integration (Managed Certs)
+  ha_integration:
+    enabled: true
+    default_certs: true
+    custom_certs:
+      - name: "ha-proxy"
+        common_name: "homeassistant.local"
+        sans: "homeassistant.local,localhost"
+        validity_days: 90
+        ha_base_sans: true
+
+  # Backup
+  backup:
+    backup_enabled: true
+    backup_interval_hours: 24
+    backup_retention_count: 7
+    backup_location: "addon_config"
+
+  # Logging
+  log_level: "info"
+
+  # Direct HTTPS Access (bypass ingress — requires step-ca issued cert in /ssl/)
+  direct_access:
+    enabled: false
+
+schema:
+  hostname: str
+  domain_name: str
+  certificate_defaults:
+    default_cert_validity_days: int(1,730)
+    default_key_size: list(2048|4096|8192)
+    default_key_type: list(RSA|ECDSA)
+  certificate_renewal:
+    cert_renewal_enabled: bool
+    cert_renewal_check_interval_hours: int(1,168)
+    cert_renewal_restart_services: bool
+  certificate_notifications:
+    cert_notify_enabled: bool
+    cert_notify_critical_days: int(1,30)
+    cert_notify_warning_days: int(7,90)
+  ha_integration:
+    enabled: bool
+    default_certs: bool
+    custom_certs:
+      - name: str
+        common_name: str
+        sans: str?
+        validity_days: int(1,730)?
+        ha_base_sans: bool?
+  backup:
+    backup_enabled: bool
+    backup_interval_hours: int(1,168)
+    backup_retention_count: int(1,30)
+    backup_location: list(share|addon_config)
+  log_level: list(debug|info|warning|error)
+  direct_access:
+    enabled: bool
+    username: str?
+    password: password?
+    session_timeout: int(300,86400)?
+    certfile: str?
+    keyfile: str?

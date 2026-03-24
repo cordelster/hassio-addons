@@ -1,0 +1,141 @@
+---
+configuration:
+  hostname:
+    name: Hostname
+    description: Hostname for the PKI server (used as the CA common name and certificate subject).
+  domain_name:
+    name: Domain Name
+    description: Local domain name appended to the hostname (e.g. home.local).
+
+  certificate_defaults:
+    name: Certificate Defaults
+    fields:
+      default_cert_validity_days:
+        name: Default Validity (days)
+        description: Default lifetime for issued certificates (1-730 days).
+      default_key_size:
+        name: RSA Key Size
+        description: Key size in bits when using RSA. Ignored for ECDSA.
+      default_key_type:
+        name: Key Type
+        description: Cryptographic key algorithm used for issued certificates.
+
+  certificate_renewal:
+    name: Certificate Renewal
+    fields:
+      cert_renewal_enabled:
+        name: Enable Auto-Renewal
+        description: Automatically renew managed certificates before they expire.
+      cert_renewal_check_interval_hours:
+        name: Check Interval (hours)
+        description: How often to check whether certificates need renewal (1-168 hours).
+      cert_renewal_threshold_days:
+        name: Renewal Threshold (days)
+        description: Begin renewal when a certificate has fewer than this many days remaining (7-90).
+      cert_renewal_restart_services:
+        name: Restart Services After Renewal
+        description: Restart affected services automatically after a certificate is renewed.
+
+  certificate_notifications:
+    name: Expiration Notifications
+    fields:
+      cert_notify_enabled:
+        name: Enable Notifications
+        description: Send persistent notifications to Home Assistant when certificates approach expiration.
+      cert_notify_critical_days:
+        name: Critical Threshold (days)
+        description: Trigger a critical alert when a certificate expires within this many days (1-30).
+      cert_notify_warning_days:
+        name: Warning Threshold (days)
+        description: Trigger a warning when a certificate expires within this many days (7-90).
+
+  ha_integration:
+    name: HA Certificate Management
+    fields:
+      enabled:
+        name: Enable HA Integration
+        description: Issue and maintain certificates in the /ssl/ folder for use by Home Assistant and other addons.
+      default_certs:
+        name: Issue Default HA Certificate
+        description: Automatically issue step-ha.pem/key covering the configured hostname and common HA SANs.
+      custom_certs:
+        name: Custom Certificates
+        description: >-
+          Additional certificates to issue into /ssl/. Each entry creates step-<name>.pem and step-<name>.key.
+          The HA configured hostname, localhost, and 127.0.0.1 are added automatically unless ha_base_sans is false.
+          For addon-to-addon TLS add the addon Docker DNS name as a SAN (slug with underscores replaced by hyphens,
+          e.g. nginx_proxy_manager becomes nginx-proxy-manager). For HA Core add "homeassistant" as a SAN.
+        fields:
+          name:
+            name: Certificate Name
+            description: File base name. Certificate saved as /ssl/step-<name>.pem and /ssl/step-<name>.key.
+          common_name:
+            name: Common Name
+            description: Certificate subject common name (CN).
+          sans:
+            name: Subject Alternative Names
+            description: Comma-separated additional DNS names or IP addresses to include in the certificate.
+          validity_days:
+            name: Validity (days)
+            description: Certificate lifetime in days (1-730). Leave blank to use the default.
+          ha_base_sans:
+            name: Include HA Base SANs
+            description: >-
+              When true (default), automatically adds the HA configured hostname, localhost, and 127.0.0.1.
+              Set to false only if you need a certificate with exactly the SANs you specified.
+
+  backup:
+    name: Backup
+    fields:
+      backup_enabled:
+        name: Enable Scheduled Backups
+        description: Automatically create encrypted backups of the CA data on a schedule.
+      backup_interval_hours:
+        name: Backup Interval (hours)
+        description: How often to create a backup (1-168 hours).
+      backup_retention_count:
+        name: Backups to Keep
+        description: Number of most-recent backups to retain before older ones are deleted (1-30).
+      backup_location:
+        name: Backup Location
+        description: Where to store backup archives. addon_config = persistent addon storage, share = /share/stepca/backups.
+
+  log_level:
+    name: Log Level
+    description: Verbosity of addon log output.
+
+  direct_access:
+    name: Direct Access
+    fields:
+      enabled:
+        name: Enable Direct Access
+        description: >-
+          Enable port 8099 for direct access outside of the HA ingress.
+          Providing certfile and keyfile enables HTTPS. Leave them blank for plain HTTP,
+          which is recommended when behind a reverse proxy.
+      username:
+        name: Admin Username
+        description: Username for the direct access administrator account.
+      password:
+        name: Admin Password
+        description: Password for the direct access administrator account. Required when direct access is enabled.
+      session_timeout:
+        name: Session Timeout
+        description: Idle session timeout in seconds (300-86400).
+      certfile:
+        name: Certificate File
+        description: >-
+          Filename of the TLS certificate in /ssl/ (e.g. step-ha.pem).
+          Providing both certfile and keyfile enables HTTPS on port 8099.
+          Leave blank to serve plain HTTP when behind a reverse proxy.
+      keyfile:
+        name: Key File
+        description: >-
+          Filename of the TLS private key in /ssl/ (e.g. step-ha.key).
+          Providing both certfile and keyfile enables HTTPS on port 8099.
+          Leave blank to serve plain HTTP when behind a reverse proxy.
+
+network:
+  443/tcp: step-ca PKI/Certificate Authority
+  8099/tcp: Web Management Interface (HTTP or HTTPS - cert paths in config enable SSL)
+  18080/tcp: Web Management Interface (Ingress)
