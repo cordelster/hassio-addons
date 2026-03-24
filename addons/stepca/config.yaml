@@ -9,7 +9,7 @@ arch:
 startup: services
 boot: manual
 init: false
-apparmor: default
+apparmor: true
 ports:
   443/tcp: 443
   8099/tcp: 8099
