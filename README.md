@@ -23,7 +23,7 @@ I can always use help with documentation as I tend to over do it. If you wish to
 |--------|-------------|
 | [Kanidm](addons/kanidm) | KanIDM - Modern identity management and authentication platform |
 | [Kanidm Manager](addons/kanidm-manager) | Web UI for managing Kanidm OAuth2 clients, users, and groups |
-| [HA stepCA (Certificate Authority)](addons/stepca) | High-performance PKI Certificate Authority (step-ca) for advanced labs with ACF |
+| [HA stepCA (Certificate Authority)](addons/stepca) | High-performance PKI Certificate Authority (step-ca) for advanced labs with ACF webUI |
 <!-- ADDONS_END -->
 
 ### A couple other great repos to check out:
