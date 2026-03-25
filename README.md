@@ -5,6 +5,9 @@
 [paypal-badge]: https://img.shields.io/badge/Donate%20via%20PayPal-0070BA?logo=paypal&style=flat&logoColor=white
 [kofi-badge]: https://img.shields.io/badge/Donate%20via%20KoFi-0070BA?logo=kofi&style=flat&logoColor=white
 
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2cordelster%2Fhassio-addons)
+
 All of these Home Assistant (HASSIO) add-ons I developed for my own personal use, and most have been my private collection for some time and I regularly maintain them.
 
 My primary focus is security first, followed by tenacity for quality, and recently consolidation of powered devices in my homelab brought me to making these addons that I use and rely on regularly.
