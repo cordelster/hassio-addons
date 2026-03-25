@@ -16,6 +16,11 @@ If you have suggestions for a missing application you would like to see me imple
 
 I can always use help with documentation as I tend to over do it. If you wish to add to this repo I'm open to collaboration and keeping projects/repos alive.
 
+## Add-ons
+
+<!-- ADDONS_START -->
+<!-- ADDONS_END -->
+
 ### A couple other great repos to check out:
 [alexbelgium](https://github.com/alexbelgium/hassio-addons) 
 [einschmidt](https://github.com/einschmidt/hassio-addons) Your packages inspired me to let my addons in the wild. Get ready.

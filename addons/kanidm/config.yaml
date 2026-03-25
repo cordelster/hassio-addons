@@ -1,13 +1,12 @@
 name: Kanidm
 version: HA.1.0.8-kanidm.1.9.2
 slug: kanidm
-description: Modern identity management and authentication platform
+description: KanIDM - Modern identity management and authentication platform
 url: https://github.com/cordelster/ha-addon-kanidm
 #image: "ghcr.io/cordelster/kanidm"
 arch:
   - aarch64
   - amd64
-  - armv7
 init: false
 startup: application
 boot: auto

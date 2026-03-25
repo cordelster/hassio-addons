@@ -1,0 +1,49 @@
+name: Update README
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'addons/**/config.yaml'
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate addon list
+        id: generate
+        run: |
+          BLOCK=""
+          for cfg in addons/*/config.yaml; do
+            addon_dir=$(dirname "$cfg")
+            slug=$(basename "$addon_dir")
+            name=$(grep -E '^name:' "$cfg" | sed 's/^name:[[:space:]]*//' | tr -d '"'"'")
+            desc=$(grep -E '^description:' "$cfg" | sed 's/^description:[[:space:]]*//' | tr -d '"'"'")
+            BLOCK="${BLOCK}\n### ${name}\n${desc}\n"
+          done
+
+          # Replace content between markers
+          python3 - <<EOF
+          import re, pathlib
+          readme = pathlib.Path("README.md").read_text()
+          block = "${BLOCK}".replace("\\n", "\n")
+          updated = re.sub(
+              r"<!-- ADDONS_START -->.*?<!-- ADDONS_END -->",
+              f"<!-- ADDONS_START -->\n{block}\n<!-- ADDONS_END -->",
+              readme,
+              flags=re.DOTALL
+          )
+          pathlib.Path("README.md").write_text(updated)
+          EOF
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet README.md || (git add README.md && git commit -m "chore: update addon list in README")
+          git push

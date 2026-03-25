@@ -1,7 +1,8 @@
 name: HA stepCA (Certificate Authority)
 version: "0.0.8"
 slug: stepca
-description: High-performance PKI Certificate Authority (step-ca) for advanced labs
+description: High-performance PKI Certificate Authority (step-ca) for advanced labs with ACF 
+webUI
 image: ghcr.io/cordelster/ha-stepca/stepca-{arch}
 arch:
   - amd64
