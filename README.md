@@ -19,6 +19,16 @@ I can always use help with documentation as I tend to over do it. If you wish to
 ## Add-ons
 
 <!-- ADDONS_START -->
+
+### Kanidm Manager
+Web UI for managing Kanidm OAuth2 clients, users, and groups
+
+### Kanidm
+KanIDM - Modern identity management and authentication platform
+
+### HA stepCA (Certificate Authority)
+High-performance PKI Certificate Authority (step-ca) for advanced labs with ACF 
+
 <!-- ADDONS_END -->
 
 ### A couple other great repos to check out:
