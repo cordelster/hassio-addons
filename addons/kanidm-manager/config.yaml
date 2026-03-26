@@ -1,12 +1,12 @@
 name: Kanidm Manager
-version: 1.0.7
+version: 1.0.8
 slug: kanidm-manager
 description: Web UI for managing Kanidm OAuth2 clients, users, and groups
 url: https://github.com/cordelster/ha-addon-kanidm
+image: ghcr.io/cordelster/kanidm-oauth2-manager:0.0.4
 arch:
   - aarch64
   - amd64
-  - armv7
 init: false
 startup: application
 boot: auto
@@ -36,13 +36,9 @@ options:
   kanidm_password: ""
   origin: "http://localhost:3000"
 
-  # ==========================================
+  # ===========================
   # TLS (Collapsible)
-  # ==========================================
-  # Provide a CA certificate to establish trust with self-signed certs.
-  # For JamBoxKanidm SELFIE certs use:
-  #   /ssl/JamBoxKanidm-SELFIE-CA-Chain.pem
-  # Leave empty and enable accept_invalid_certs below as a fallback.
+  # ===========================
   tls:
     ca_cert_path: "/ssl/JamBoxKanidm-SELFIE-CA-Chain.pem"
     accept_invalid_certs: false

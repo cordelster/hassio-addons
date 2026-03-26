@@ -1,10 +1,17 @@
+[![Donate via PayPal][paypal-badge]](https://www.paypal.com/donate/?hosted_button_id=5RBTFAV64XGJ2)
+![update-badge](https://img.shields.io/github/last-commit/cordelster/hassio-addons?label=last%20update)
+[![IssueHunt](https://img.shields.io/badge/IssueHunt-%24-brightgreen.svg)](https://issuehunt.io/r/cordelster/hassio-addons)
+
+
+[paypal-badge]: https://img.shields.io/badge/Donate%20via%20PayPal-0070BA?logo=paypal&style=flat&logoColor=white
+
 # Kanidm Manager - Home Assistant Addon
 
 Web-based UI for managing Kanidm OAuth2 clients, users, and groups.
 
 ## About
 
-This addon provides a user-friendly web interface for managing your Kanidm identity management server. It wraps the excellent [kanidm-oauth2-manager](https://github.com/Tricked-dev/kanidm-oauth2-manager) project by Tricked-dev as a Home Assistant addon with sidebar integration.
+This addon provides a user-friendly web interface for managing your Kanidm identity management server. It wraps the excellent [kanidm-oauth2-manager](https://github.com/Tricked-dev/kanidm-oauth2-manager) project by Tricked-dev as a Home Assistant addon with ingress sidebar integration.
 
 ## Features
 
@@ -50,3 +57,6 @@ This addon wraps the [kanidm-oauth2-manager](https://github.com/Tricked-dev/kani
 ## License
 
 See upstream project for license information.
+
+[kofi-badge]: https://img.shields.io/badge/Donate%20via%20KoFi-0070BA?logo=kofi&style=flat&logoColor=white
+[![Donate via ko-fi][kofi-badge]](https://ko-fi.com/L3L0V38OP)

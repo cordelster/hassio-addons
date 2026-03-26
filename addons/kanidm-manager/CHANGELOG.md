@@ -1,6 +1,12 @@
 # Changelog
 
 All notable changes to this addon will be documented in this file.
+## [1.0.8] - 2026-03-25
+  **REFACTOR:** Major code cleanup started seperation of concerns for better
+    organization, visibility, and maintainability.
+  **ADD:** Service Accounts page
+  **FIX:** Error reporting, modal refreash, kanidm api calls...
+
 ## [1.0.7] - 2026-02-19
   **UPDATE Discriptions**: Minor document updates.
 
