@@ -1,0 +1,83 @@
+worker_processes 1;
+error_log /proc/1/fd/2 warn;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 64;
+}
+
+http {
+    access_log off;
+    client_max_body_size 10M;
+
+    # Temp paths writable without root
+    client_body_temp_path /tmp/nginx_client_body;
+    proxy_temp_path       /tmp/nginx_proxy;
+    fastcgi_temp_path     /tmp/nginx_fastcgi;
+    uwsgi_temp_path       /tmp/nginx_uwsgi;
+    scgi_temp_path        /tmp/nginx_scgi;
+
+    # sub_filter works on text/html by default; declaring here avoids duplicate
+    # MIME type warnings from nginx's built-in mime.types inclusion.
+    sub_filter_once on;
+
+    server {
+        listen 3000;
+        server_name _;
+
+        # ---------------------------------------------------------------------------
+        # The SvelteKit app uses absolute-path fetch calls (e.g. fetch("/api/kani")).
+        # When served via HA ingress at /api/hassio_ingress/{token}/, the browser
+        # resolves these against the HA origin, bypassing ingress entirely (404).
+        #
+        # Fix: inject a fetch() monkey-patch into the page HTML that prepends the
+        # ingress prefix to any absolute /api/* call before it leaves the browser.
+        # This is done via nginx sub_filter on the HTML response from Bun.
+        # ---------------------------------------------------------------------------
+
+        # Inject the fetch patch immediately after <head>
+        # INGRESS_PREFIX is substituted by run.sh (e.g. /api/hassio_ingress/abc123)
+        sub_filter '<head>' '<head><script>
+(function(){
+  var _base = "INGRESS_PREFIX";
+  if (!_base) return;
+  var _fetch = window.fetch;
+  window.fetch = function(input, init) {
+    if (typeof input === "string" && input.charAt(0) === "/" && input.indexOf(_base) !== 0) {
+      input = _base + input;
+    } else if (input instanceof Request && input.url.charAt(0) === "/") {
+      var u = input.url;
+      if (u.indexOf(_base) !== 0) input = new Request(_base + u, input);
+    }
+    return _fetch.call(this, input, init);
+  };
+})();
+</script>';
+
+        # Ingress-prefixed requests: strip prefix before forwarding to Bun
+        location INGRESS_PREFIX/ {
+            rewrite ^INGRESS_PREFIX/(.*)$ /$1 break;
+            proxy_pass http://127.0.0.1:3001;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_redirect ~^http://127\.0\.0\.1:3001/(.*)$ INGRESS_PREFIX/$1;
+        }
+
+        # Direct port-3000 access (no ingress prefix) - pass through unchanged
+        location / {
+            proxy_pass http://127.0.0.1:3001;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+    }
+}
